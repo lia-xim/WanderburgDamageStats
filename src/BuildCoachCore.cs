@@ -115,10 +115,7 @@ internal static class BuildCoachCore
         float cooldownExponent = auto ? 1f : .65f;
         float factor = damage
             * MathF.Pow(ammo, ammoExponent)
-            * MathF.Pow(cooldown, cooldownExponent)
-            * MathF.Pow(duration, .5f)
-            * MathF.Pow(size, .35f)
-            * MathF.Pow(speed, .15f);
+            * MathF.Pow(cooldown, cooldownExponent);
         factor = Math.Clamp(factor, .1f, 50f);
         float strength = factor - 1f;
         float? buildGain = channelShare.HasValue ? Math.Max(0f, strength * Math.Clamp(channelShare.Value, 0f, 1f)) : null;
@@ -127,9 +124,9 @@ internal static class BuildCoachCore
         AddDriver(drivers,"damage",damage);
         AddDriver(drivers,"charges",ammo);
         AddDriver(drivers,"cooldown",cooldown);
-        AddDriver(drivers,"duration",duration);
-        AddDriver(drivers,"size",size);
-        AddDriver(drivers,"speed",speed);
+        AddContextDriver(drivers,"duration",duration);
+        AddContextDriver(drivers,"size",size);
+        AddContextDriver(drivers,"speed",speed);
         bool conditional = special || ammo != 1f || cooldown != 1f || duration != 1f || size != 1f || speed != 1f;
         string confidence = conditional ? (auto ? "medium confidence" : "low confidence: depends on ability use") : "high confidence";
         string reason = drivers.Count == 0 ? "Preview shows no modeled output change" : $"Projected {kind.ToLowerInvariant()} output ×{Format(factor)} · {string.Join(", ",drivers)} · {confidence}";
@@ -178,6 +175,10 @@ internal static class BuildCoachCore
     private static void AddDriver(List<string> drivers,string name,float ratio)
     {
         if(Math.Abs(ratio-1f)>.005f) drivers.Add($"{name} ×{Format(ratio)}");
+    }
+    private static void AddContextDriver(List<string> drivers,string name,float ratio)
+    {
+        if(Math.Abs(ratio-1f)>.005f) drivers.Add($"{name} ×{Format(ratio)} (context only)");
     }
     private static bool HasLetters(string value) => value.Any(char.IsLetter);
     private static bool TryNumber(string value, out float number) =>

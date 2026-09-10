@@ -1,5 +1,12 @@
 # Wanderburg Damage Stats – Changelog
 
+## 0.3.1 - 2026-09-10
+
+- Keeps damage multiplier changes as direct projected DPS factors through the game's future displayed-damage preview.
+- Removes duration, size, range, and projectile speed from the numerical DPS multiplier.
+- Shows those utility changes as context only.
+- Logs whether each recommendation used Wanderburg's complete generated preview or the text fallback.
+
 ## 0.3.0 - 2026-09-10
 
 - Reads each full game-generated upgrade preview and compares its complete future weapon state with the current state.

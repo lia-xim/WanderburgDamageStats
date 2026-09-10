@@ -70,7 +70,9 @@ var commonProjection=BuildCoachCore.AssessProjected(profileBefore,commonAfter,"A
 var epicProjection=BuildCoachCore.AssessProjected(profileBefore,epicAfter,"Active",new[]{"1.6 → 2 DAMAGE MULT","4 → 5.3 DURATION","0 → 50 PROJECTILE SPEED"},.462f,true);
 if(commonProjection.EstimatedBuildGain.GetValueOrDefault()<=epicProjection.EstimatedBuildGain.GetValueOrDefault())
     throw new Exception($"Full preview comparison should preserve the stronger modeled outcome: common={commonProjection}, epic={epicProjection}");
-if(!epicProjection.MainReason.Contains("duration") || !epicProjection.MainReason.Contains("speed") || !epicProjection.MainReason.Contains("low confidence"))
+if(!epicProjection.MainReason.Contains("duration") || !epicProjection.MainReason.Contains("context only") || !epicProjection.MainReason.Contains("speed") || !epicProjection.MainReason.Contains("low confidence"))
     throw new Exception($"Projected utility breakdown is incomplete: {epicProjection.MainReason}");
+if(Math.Abs(epicProjection.UpgradeStrength-.25f)>.001f)
+    throw new Exception($"Duration and speed must not inflate projected DPS: {epicProjection}");
 
 Console.WriteLine("PASS: 11 Damage Stats recommendation cases (damage share, conservative cooldown/charges, unmodelled special, numeric legendary projection, ability/auto/unknown cooldown channels, epic utility confidence, full preview comparison).");

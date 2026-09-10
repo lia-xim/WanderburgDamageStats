@@ -16,6 +16,7 @@ public sealed class DamageOverlay : MonoBehaviour
     private float errorAt;
     private string lastInventory="";
     private float lastGameTime=-1;
+    private readonly HashSet<string> loggedPreviews=new();
     private GameObject canvasObject;
     private RectTransform panel;
     private TextMeshProUGUI text;
@@ -74,7 +75,7 @@ public sealed class DamageOverlay : MonoBehaviour
             var activeChoices=Choices.Values.Where(c=>c.Option && c.Option.gameObject.activeInHierarchy && c.Option.HasConfiguredOption)
                 .OrderBy(c=>c.Option.transform.position.x).Take(3).ToArray();
             bool showingUpgrade=gm.upgradeMenuOpen || activeChoices.Length>0;
-            var content=new System.Text.StringBuilder("<color=#F3C879><b>DAMAGE STATS</b></color> <size=58%><color=#9A9A9A>v0.3.0</color></size>\n");
+            var content=new System.Text.StringBuilder("<color=#F3C879><b>DAMAGE STATS</b></color> <size=58%><color=#9A9A9A>v0.3.1</color></size>\n");
             content.Append(recentAll>0
                ?$"<size=85%>Last 20 s: {Number(recentAll/observedSeconds)} DPS · F8</size>\n\n"
                 :"<size=85%>Waiting for combat damage · F8</size>\n\n");
@@ -91,6 +92,9 @@ public sealed class DamageOverlay : MonoBehaviour
                     var assessment=currentModule && previewModule
                         ?BuildCoachCore.AssessProjected(WeaponStats.Read(currentModule).Profile,WeaponStats.Read(previewModule).Profile,c.Kind,c.RawLines,share,c.HasSpecialEffect)
                         :BuildCoachCore.Assess(c.RawLines,share,c.HasSpecialEffect);
+                    string previewKey=$"{c.Option.GetInstanceID()}:{c.Index}:{c.Title}";
+                    if(loggedPreviews.Add(previewKey))
+                        Plugin.Logger.LogInfo($"Overall model card {i+1}: game preview={(previewModule?"yes":"no")}; {assessment.MainReason}");
                     ranked.Add(new(c,i+1,assessment,share));
                 }
                 var calculable=ranked.Where(r=>r.Assessment.IsNumericallyComparable)
