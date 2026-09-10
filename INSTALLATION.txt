@@ -1,17 +1,17 @@
-WANDERBURG BUILD COACH INSTALLIEREN
-===================================
+WANDERBURG DAMAGE STATS INSTALLIEREN
+====================================
 
 Du hast BepInEx schon installiert?
 
 1. Öffne im entpackten ZIP den Ordner:
    BepInEx\plugins
 
-2. Kopiere WanderburgBuildCoach.dll nach:
+2. Kopiere WanderburgDamageStats.dll nach:
    C:\Program Files (x86)\Steam\steamapps\common\Wanderburg Game\BepInEx\plugins\
 
 3. Starte Wanderburg über Steam.
 
-Fertig. Links oben sollte im Run BUILD COACH stehen. Mit F8 kannst du die Anzeige ein- und ausblenden.
+Fertig. Links oben sollte im Run DAMAGE STATS stehen. Mit F8 kannst du die Anzeige ein- und ausblenden.
 
 ANDERER SPIELORDNER?
 

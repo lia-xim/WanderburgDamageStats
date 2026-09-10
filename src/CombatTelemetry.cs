@@ -56,7 +56,7 @@ internal static class CombatTelemetry
         LastTotals.Clear();
         StartedAt = Time.time;
         HasStarted = false;
-        Plugin.Logger.LogInfo("Build Coach telemetry reset for new run.");
+        Plugin.Logger.LogInfo("Damage Stats telemetry reset for new run.");
     }
 
     internal static void RefreshFromGame()

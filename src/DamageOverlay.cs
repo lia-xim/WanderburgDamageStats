@@ -71,7 +71,7 @@ public sealed class DamageOverlay : MonoBehaviour
             }
             EnsureUI();
             if(!canvasObject) return;
-            var content=new System.Text.StringBuilder("<color=#F3C879><b>BUILD COACH</b></color>\n");
+            var content=new System.Text.StringBuilder("<color=#F3C879><b>DAMAGE STATS</b></color>\n");
             content.Append(recentAll>0
                ?$"<size=85%>Letzte 20 s: {Number(recentAll/observedSeconds)} DPS · F8</size>\n\n"
                 :"<size=85%>Warte auf Kampftreffer · F8</size>\n\n");
@@ -95,7 +95,7 @@ public sealed class DamageOverlay : MonoBehaviour
                         .OrderByDescending(r=>r.Assessment.EstimatedBuildGain ?? r.Assessment.UpgradeStrength).ToArray();
                     var winner=calculable.FirstOrDefault();
                     bool hasSpecial=ranked.Any(r=>r.Assessment.HasUnmodelledEffect);
-                    content.Append("\n\n<color=#F3C879><b>UPGRADE-BERATER</b></color>");
+                    content.Append("\n\n<color=#F3C879><b>UPGRADE-TIPP</b></color>");
                     if(winner!=null)
                     {
                         content.Append($"\n<b>{(hasSpecial?"ZAHLEN-SIEGER":"EMPFEHLUNG")} · KARTE {winner.Card}</b>");

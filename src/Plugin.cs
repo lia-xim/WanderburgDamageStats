@@ -10,7 +10,7 @@ using Object = UnityEngine.Object;
 
 namespace WanderburgDamageHUD;
 
-[BepInPlugin("io.github.lia-xim.wanderburg-build-coach", "Wanderburg Build Coach", "0.2.0")]
+[BepInPlugin("io.github.lia-xim.wanderburg-damage-stats", "Wanderburg Damage Stats", "0.2.0")]
 public sealed class Plugin : BasePlugin
 {
     internal static ManualLogSource Logger = null!;
@@ -25,9 +25,9 @@ public sealed class Plugin : BasePlugin
         Scale = Config.Bind("Anzeige", "Scale", 1f, "Zusaetzlicher Skalierungsfaktor (0.7 bis 1.8).");
         Left = Config.Bind("Anzeige", "Left", 70f, "Abstand vom linken Rand im Run; im Upgrade-Menue wird der Kartenrand freigehalten.");
         Top = Config.Bind("Anzeige", "Top", 100f, "Abstand vom oberen Rand in skalierten Pixeln.");
-        new Harmony("io.github.lia-xim.wanderburg-build-coach").PatchAll();
+        new Harmony("io.github.lia-xim.wanderburg-damage-stats").PatchAll();
         AddComponent<DamageOverlay>();
-        Log.LogInfo("Build Coach loaded. F8 toggles display. Damage telemetry is polled read-only; no gameplay/statistics methods are patched.");
+        Log.LogInfo("Damage Stats loaded. F8 toggles display. Damage telemetry is polled read-only; no gameplay/statistics methods are patched.");
     }
 }
 

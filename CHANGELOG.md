@@ -1,4 +1,4 @@
-# Changelog
+# Wanderburg Damage Stats – Changelog
 
 ## 0.2.0 - 2026-09-10
 

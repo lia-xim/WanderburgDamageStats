@@ -34,4 +34,4 @@ var special=BuildCoachCore.Assess(Array.Empty<string>(),.8f,true);
 if(!special.HasUnmodelledEffect || special.EstimatedBuildGain.GetValueOrDefault()!=0)
     throw new Exception($"Special assessment must remain unmodelled: {special}");
 
-Console.WriteLine("PASS: 4 Build Coach cases (damage share, cooldown benefit, charge weighting, unmodelled special).");
+Console.WriteLine("PASS: 4 Damage Stats recommendation cases (damage share, cooldown benefit, charge weighting, unmodelled special).");
