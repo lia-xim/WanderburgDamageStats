@@ -33,7 +33,7 @@ Special and legendary effects are harder to compare reliably. The mod marks thos
 [b]This is an early alpha for Wanderburg EA 0.9.8 on Windows.[/b]
 
 Download and source code:
-[url=https://github.com/lia-xim/WanderburgDamageStats/releases/tag/v0.2.0]Wanderburg Damage Stats 0.2.0 on GitHub[/url]
+[url=https://github.com/lia-xim/WanderburgDamageStats/releases/latest]Download the latest Wanderburg Damage Stats release on GitHub[/url]
 
 SECTION 2 — Installation
 
@@ -44,7 +44,7 @@ The mod uses BepInEx 6 for Unity IL2CPP, Windows x64.
 [olist]
 [*]Install BepInEx 6 using the [url=https://docs.bepinex.dev/master/articles/user_guide/installation/unity_il2cpp.html]official IL2CPP installation guide[/url].
 [*]Start Wanderburg once through Steam, then close it. This lets BepInEx create its folders.
-[*]Download [url=https://github.com/lia-xim/WanderburgDamageStats/releases/tag/v0.2.0]WanderburgDamageStats-0.2.0.zip[/url] and extract it.
+[*]Download the newest [url=https://github.com/lia-xim/WanderburgDamageStats/releases/latest]WanderburgDamageStats ZIP[/url] and extract it.
 [*]Copy [code]WanderburgDamageStats.dll[/code] into [code]Wanderburg Game\BepInEx\plugins\[/code].
 [*]Start Wanderburg normally through Steam.
 [/olist]
@@ -81,6 +81,6 @@ To remove the mod, close the game and delete:
 
 [code]BepInEx\plugins\WanderburgDamageStats.dll[/code]
 
-If it does not load, open [code]BepInEx\LogOutput.log[/code] and search for [code]Wanderburg Damage Stats 0.2.0[/code].
+If it does not load, open [code]BepInEx\LogOutput.log[/code] and search for [code]Wanderburg Damage Stats[/code].
 
 Feedback and bug reports are welcome on the [url=https://github.com/lia-xim/WanderburgDamageStats/issues]GitHub issue tracker[/url].

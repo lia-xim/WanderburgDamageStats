@@ -10,7 +10,7 @@ This is an early alpha for Wanderburg EA 0.9.8 on Windows. It is an unofficial c
 
 If you already have BepInEx installed for Wanderburg, you only need to copy one file:
 
-1. Download `WanderburgDamageStats-0.2.0.zip` from the [GitHub Releases page](https://github.com/lia-xim/WanderburgDamageStats/releases).
+1. Download the newest `WanderburgDamageStats` ZIP from the [GitHub Releases page](https://github.com/lia-xim/WanderburgDamageStats/releases/latest).
 2. Extract the ZIP.
 3. Copy this file:
 
@@ -63,7 +63,7 @@ BepInEx\plugins\WanderburgDamageStats.dll
 
 - Check that the DLL is directly inside `BepInEx\plugins`.
 - Start the game through Steam. In our test, launching `Wanderburg.exe` directly did not initialize Steamworks correctly, which can prevent Steam statistics and leaderboards from working for that run.
-- Open `BepInEx\LogOutput.log` in the game folder and search for `Wanderburg Damage Stats 0.2.0`.
+- Open `BepInEx\LogOutput.log` in the game folder and search for `Wanderburg Damage Stats`.
 - Settings are stored in `BepInEx\config\io.github.lia-xim.wanderburg-damage-stats.cfg`. You can change the overlay scale and position there.
 
 ## How the recommendation works

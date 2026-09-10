@@ -21,8 +21,8 @@ internal static class PreviewText
         float delta=after-before;
         if(Math.Abs(delta)<.0001f) return result+" (=)";
         string sign=delta>0?"+":"";
-        string extra=sign+delta.ToString("0.##",CultureInfo.GetCultureInfo("de-DE"));
-        if(Math.Abs(before)>.0001f) extra+=" / "+sign+(delta/before*100).ToString("0.#",CultureInfo.GetCultureInfo("de-DE"))+"%";
+        string extra=sign+delta.ToString("0.##",CultureInfo.InvariantCulture);
+        if(Math.Abs(before)>.0001f) extra+=" / "+sign+(delta/before*100).ToString("0.#",CultureInfo.InvariantCulture)+"%";
         return result+" ("+extra+")";
     }
 }

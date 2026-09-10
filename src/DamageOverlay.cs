@@ -60,7 +60,7 @@ public sealed class DamageOverlay : MonoBehaviour
                 var recent=CombatTelemetry.Recent(m.moduleID);
                 float dealt=recent.Active+recent.Auto+recent.Unknown;
                 float share=recentAll>0?dealt/recentAll:0f;
-                rows.Add($"<b>{name}</b>\n{Percent(share)} Anteil  ·  {Number(dealt/observedSeconds)} DPS");
+                rows.Add($"<b>{name}</b>\n{Percent(share)} share  ·  {Number(dealt/observedSeconds)} DPS");
                 inventory.Add($"{name}:{stats.Active:0.##}/{stats.Auto:0.##}");
             }
             string currentInventory=string.Join("|",inventory);
@@ -71,60 +71,58 @@ public sealed class DamageOverlay : MonoBehaviour
             }
             EnsureUI();
             if(!canvasObject) return;
+            var activeChoices=Choices.Values.Where(c=>c.Option && c.Option.gameObject.activeInHierarchy && c.Option.HasConfiguredOption)
+                .OrderBy(c=>c.Option.transform.position.x).Take(3).ToArray();
+            bool showingUpgrade=gm.upgradeMenuOpen || activeChoices.Length>0;
             var content=new System.Text.StringBuilder("<color=#F3C879><b>DAMAGE STATS</b></color>\n");
             content.Append(recentAll>0
-               ?$"<size=85%>Letzte 20 s: {Number(recentAll/observedSeconds)} DPS · F8</size>\n\n"
-                :"<size=85%>Warte auf Kampftreffer · F8</size>\n\n");
-            content.Append(rows.Count>0?string.Join("\n\n",rows):"Noch keine Waffen montiert.");
-            if(gm.upgradeMenuOpen)
+               ?$"<size=85%>Last 20 s: {Number(recentAll/observedSeconds)} DPS · F8</size>\n\n"
+                :"<size=85%>Waiting for combat damage · F8</size>\n\n");
+            if(showingUpgrade && activeChoices.Length>0)
             {
-                var active=Choices.Values.Where(c=>c.Option && c.Option.gameObject.activeInHierarchy && c.Option.HasConfiguredOption)
-                    .OrderBy(c=>c.Option.transform.position.x).Take(3).ToArray();
-                if(active.Length>0)
+                var ranked=new List<RankedChoice>();
+                for(int i=0;i<activeChoices.Length;i++)
                 {
-                    var ranked=new List<RankedChoice>();
-                    for(int i=0;i<active.Length;i++)
-                    {
-                        var c=active[i];
-                        string moduleId=ResolveModuleId(c,modules);
-                        float? share=ResolveChannelShare(moduleId,c.Kind,scoreFromRecent,scoreAll);
-                        bool special=c.Kind=="Spezial";
-                        ranked.Add(new(c,i+1,BuildCoachCore.Assess(c.RawLines,share,special),share));
-                    }
-                    var calculable=ranked.Where(r=>r.Assessment.UpgradeStrength>0 && !r.Assessment.HasUnmodelledEffect)
-                        .OrderByDescending(r=>r.Assessment.EstimatedBuildGain ?? r.Assessment.UpgradeStrength).ToArray();
-                    var winner=calculable.FirstOrDefault();
-                    bool hasSpecial=ranked.Any(r=>r.Assessment.HasUnmodelledEffect);
-                    content.Append("\n\n<color=#F3C879><b>UPGRADE-TIPP</b></color>");
-                    if(winner!=null)
-                    {
-                        content.Append($"\n<b>{(hasSpecial?"ZAHLEN-SIEGER":"EMPFEHLUNG")} · KARTE {winner.Card}</b>");
-                        content.Append($"\n{Clean(winner.Choice.Name)} · {winner.Choice.Kind}");
-                        content.Append(winner.Assessment.EstimatedBuildGain.HasValue
-                            ?$"\n<color=#8FE3A1>≈ +{Percent(winner.Assessment.EstimatedBuildGain.Value)} Build-Output</color>"
-                            :$"\n<color=#8FE3A1>+{Percent(winner.Assessment.UpgradeStrength)} Karteneffekt</color>");
-                        content.Append($"\n<size=82%>{winner.Assessment.MainReason}");
-                        if(winner.ChannelShare.HasValue) content.Append($" · betrifft {Percent(winner.ChannelShare.Value)} deines Schadens");
-                        content.Append("</size>");
-                    }
-                    else content.Append("\nNoch keine numerisch belastbare Empfehlung.");
-
-                    content.Append("\n\n<size=85%><b>RANGLISTE</b>");
-                    foreach(var item in ranked.OrderByDescending(r=>r.Assessment.HasUnmodelledEffect?float.MinValue:r.Assessment.EstimatedBuildGain??r.Assessment.UpgradeStrength))
-                    {
-                        string value=item.Assessment.HasUnmodelledEffect?"situativ":item.Assessment.EstimatedBuildGain.HasValue?"≈ +"+Percent(item.Assessment.EstimatedBuildGain.Value):"+"+Percent(item.Assessment.UpgradeStrength);
-                        content.Append($"\nKarte {item.Card}: {Clean(item.Choice.Name)} · {value}");
-                    }
-                    if(hasSpecial) content.Append("\nSpezialkarten bitte auf der Karte prüfen.");
-                    if(scoreAll<=0) content.Append("\nVorläufig: noch keine Schadensdaten.");
+                    var c=activeChoices[i];
+                    string moduleId=ResolveModuleId(c,modules);
+                    float? share=ResolveChannelShare(moduleId,c.Kind,scoreFromRecent,scoreAll);
+                    bool special=c.Kind=="Special";
+                    ranked.Add(new(c,i+1,BuildCoachCore.Assess(c.RawLines,share,special),share));
+                }
+                var calculable=ranked.Where(r=>r.Assessment.UpgradeStrength>0 && !r.Assessment.HasUnmodelledEffect)
+                    .OrderByDescending(r=>r.Assessment.EstimatedBuildGain ?? r.Assessment.UpgradeStrength).ToArray();
+                var winner=calculable.FirstOrDefault();
+                bool hasSpecial=ranked.Any(r=>r.Assessment.HasUnmodelledEffect);
+                content.Append("<color=#F3C879><b>UPGRADE RECOMMENDATION</b></color>");
+                if(winner!=null)
+                {
+                    content.Append($"\n<color=#8FE3A1><b>→ {(hasSpecial?"NUMBERS PICK":"BEST PICK")}: CARD {winner.Card}</b></color>");
+                    content.Append($"\n{Clean(winner.Choice.Name)} · {winner.Choice.Kind}");
+                    content.Append(winner.Assessment.EstimatedBuildGain.HasValue
+                        ?$"\n<color=#8FE3A1>≈ +{Percent(winner.Assessment.EstimatedBuildGain.Value)} Build-Output</color>"
+                        :$"\n<color=#8FE3A1>+{Percent(winner.Assessment.UpgradeStrength)} card effect</color>");
+                    content.Append($"\n<size=82%>{winner.Assessment.MainReason}");
+                    if(winner.ChannelShare.HasValue) content.Append($" · affects {Percent(winner.ChannelShare.Value)} of your damage");
                     content.Append("</size>");
                 }
+                else content.Append("\nNo reliable numerical recommendation yet.");
+
+                content.Append("\n\n<size=85%><b>RANKING</b>");
+                foreach(var item in ranked.OrderByDescending(r=>r.Assessment.HasUnmodelledEffect?float.MinValue:r.Assessment.EstimatedBuildGain??r.Assessment.UpgradeStrength))
+                {
+                    string value=item.Assessment.HasUnmodelledEffect?"situational":item.Assessment.EstimatedBuildGain.HasValue?"≈ +"+Percent(item.Assessment.EstimatedBuildGain.Value):"+"+Percent(item.Assessment.UpgradeStrength);
+                    content.Append($"\nCard {item.Card}: {Clean(item.Choice.Name)} · {value}");
+                }
+                if(hasSpecial) content.Append("\nCheck special cards for effects beyond the numbers.");
+                if(scoreAll<=0) content.Append("\nPreliminary: no damage data yet.");
+                content.Append("</size>\n\n");
             }
+            content.Append(rows.Count>0?string.Join("\n\n",rows):"No weapons mounted yet.");
             canvasObject.SetActive(true);
             text.text=content.ToString();
             float factor=Mathf.Clamp(Screen.height/1080f,.5f,3f)*Mathf.Clamp(Plugin.Scale.Value,.7f,1.8f);
             float width=Mathf.Min(216f*factor,Screen.width*.18f);
-            float x=Mathf.Clamp((gm.upgradeMenuOpen?16:Plugin.Left.Value)*factor,0,Screen.width-width);
+            float x=Mathf.Clamp((showingUpgrade?16:Plugin.Left.Value)*factor,0,Screen.width-width);
             float y=Mathf.Clamp(Plugin.Top.Value*factor,0,Screen.height-100);
             panel.anchoredPosition=new Vector2(x,-y);
             panel.sizeDelta=new Vector2(width,Screen.height-y-16);
@@ -188,11 +186,11 @@ public sealed class DamageOverlay : MonoBehaviour
     }
 
     [HideFromIl2Cpp]
-    internal static string Clean(string value)=>System.Text.RegularExpressions.Regex.Replace(value??"Waffe","<[^>]*>","");
+    internal static string Clean(string value)=>System.Text.RegularExpressions.Regex.Replace(value??"Weapon","<[^>]*>","");
     [HideFromIl2Cpp]
-    internal static string Number(float value)=>float.IsFinite(value)?value.ToString("0.##",System.Globalization.CultureInfo.GetCultureInfo("de-DE")):"–";
+    internal static string Number(float value)=>float.IsFinite(value)?value.ToString("0.##",System.Globalization.CultureInfo.InvariantCulture):"–";
     [HideFromIl2Cpp]
-    internal static string Percent(float value)=>float.IsFinite(value)?(value*100f).ToString("0.#",System.Globalization.CultureInfo.GetCultureInfo("de-DE"))+"%":"–";
+    internal static string Percent(float value)=>float.IsFinite(value)?(value*100f).ToString("0.#",System.Globalization.CultureInfo.InvariantCulture)+"%":"–";
 
     [HideFromIl2Cpp]
     private static string ResolveModuleId(ChoiceData choice,Il2CppSystem.Collections.Generic.List<Module2> modules)
@@ -213,7 +211,7 @@ public sealed class DamageOverlay : MonoBehaviour
         var value=recent?CombatTelemetry.Recent(moduleId):CombatTelemetry.Cumulative(moduleId);
         float moduleTotal=value.Active+value.Auto+value.Unknown;
         bool hasChannelSplit=value.Active+value.Auto>0;
-        float affected=kind switch { "Aktiv" when hasChannelSplit=>value.Active, "Auto" when hasChannelSplit=>value.Auto, _=>moduleTotal };
+        float affected=kind switch { "Active" when hasChannelSplit=>value.Active, "Auto" when hasChannelSplit=>value.Auto, _=>moduleTotal };
         return Mathf.Clamp01(affected/total);
     }
 }

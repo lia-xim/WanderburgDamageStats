@@ -55,7 +55,7 @@ internal static class BuildCoachCore
                 }
                 string prefix = Clean(raw.Substring(prefixStart, match.Index - prefixStart));
                 string label = HasLetters(suffix) ? suffix : prefix;
-                if (string.IsNullOrWhiteSpace(label)) label = "Wert";
+                if (string.IsNullOrWhiteSpace(label)) label = "Value";
                 var (lowerIsBetter, weight) = Classify(label);
                 changes.Add(new UpgradeChange(label.Trim(), before, after, lowerIsBetter, weight));
             }
@@ -82,7 +82,7 @@ internal static class BuildCoachCore
 
         float? buildGain = channelShare.HasValue ? Math.Max(0f, strength * Math.Clamp(channelShare.Value, 0f, 1f)) : null;
         string reason = best == null
-            ? (special ? "Spezialeffekt noch nicht mathematisch bewertet" : "keine berechenbare Werteänderung")
+            ? (special ? "Special effect is not modelled yet" : "No calculable stat change")
             : $"{best.Label}: {Format(best.Before)} → {Format(best.After)}";
         return new UpgradeAssessment(strength, buildGain, reason, special || changes.Count == 0);
     }
@@ -104,5 +104,5 @@ internal static class BuildCoachCore
     private static bool TryNumber(string value, out float number) =>
         float.TryParse(value.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out number);
     private static string Clean(string value) => Regex.Replace(Regex.Replace(value ?? "", @"<sprite[^>]*>", " "), @"<[^>]*>", " ").Trim(' ', '!', ':', '-', '·');
-    private static string Format(float value) => value.ToString("0.##", CultureInfo.GetCultureInfo("de-DE"));
+    private static string Format(float value) => value.ToString("0.##", CultureInfo.InvariantCulture);
 }

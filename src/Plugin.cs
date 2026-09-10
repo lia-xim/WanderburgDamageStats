@@ -10,7 +10,7 @@ using Object = UnityEngine.Object;
 
 namespace WanderburgDamageHUD;
 
-[BepInPlugin("io.github.lia-xim.wanderburg-damage-stats", "Wanderburg Damage Stats", "0.2.0")]
+[BepInPlugin("io.github.lia-xim.wanderburg-damage-stats", "Wanderburg Damage Stats", "0.2.1")]
 public sealed class Plugin : BasePlugin
 {
     internal static ManualLogSource Logger = null!;
@@ -21,10 +21,10 @@ public sealed class Plugin : BasePlugin
     public override void Load()
     {
         Logger = Log;
-        Enabled = Config.Bind("Anzeige", "Enabled", true, "F8 blendet die Anzeige ein/aus.");
-        Scale = Config.Bind("Anzeige", "Scale", 1f, "Zusaetzlicher Skalierungsfaktor (0.7 bis 1.8).");
-        Left = Config.Bind("Anzeige", "Left", 70f, "Abstand vom linken Rand im Run; im Upgrade-Menue wird der Kartenrand freigehalten.");
-        Top = Config.Bind("Anzeige", "Top", 100f, "Abstand vom oberen Rand in skalierten Pixeln.");
+        Enabled = Config.Bind("Display", "Enabled", true, "Press F8 to show or hide the overlay.");
+        Scale = Config.Bind("Display", "Scale", 1f, "Additional UI scale multiplier (0.7 to 1.8).");
+        Left = Config.Bind("Display", "Left", 70f, "Distance from the left edge during a run; the upgrade screen uses its own margin.");
+        Top = Config.Bind("Display", "Top", 100f, "Distance from the top edge in scaled pixels.");
         new Harmony("io.github.lia-xim.wanderburg-damage-stats").PatchAll();
         AddComponent<DamageOverlay>();
         Log.LogInfo("Damage Stats loaded. F8 toggles display. Damage telemetry is polled read-only; no gameplay/statistics methods are patched.");
@@ -56,7 +56,7 @@ internal static class ChoicePatch
                     foreach (var line in System.Text.RegularExpressions.Regex.Split(collection[i] ?? "", @"<br\s*/?>|\r?\n"))
                         if (line.Contains("<s>") && line.Contains("<b>")) rawLines.Add(line);
             }
-            string kind = upgradeType switch { ModuleUpgrade.UpgradeType.passive => "Auto", ModuleUpgrade.UpgradeType.ultimate => "Aktiv", ModuleUpgrade.UpgradeType.cooldown => "Nachladen", _ => "Spezial" };
+            string kind = upgradeType switch { ModuleUpgrade.UpgradeType.passive => "Auto", ModuleUpgrade.UpgradeType.ultimate => "Active", ModuleUpgrade.UpgradeType.cooldown => "Cooldown", _ => "Special" };
             string moduleId = "";
             var gm = GM.gm;
             if (gm && gm.ms)

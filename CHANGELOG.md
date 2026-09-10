@@ -1,5 +1,12 @@
 # Wanderburg Damage Stats – Changelog
 
+## 0.2.1 - 2026-09-10
+
+- Changes the complete in-game overlay and configuration descriptions to English.
+- Moves the upgrade recommendation above the weapon list so the suggested card remains visible.
+- Detects visible upgrade cards even when the game's internal menu flag is delayed.
+- Uses English decimal formatting throughout the overlay.
+
 ## 0.2.0 - 2026-09-10
 
 - Ersetzt die reine Basiswert-Anzeige durch tatsächliche 20-Sekunden-DPS und Schadensanteile.

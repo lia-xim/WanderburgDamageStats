@@ -5,7 +5,7 @@ var cases = new (string Input,string Expected)[]
     ("Damage <s>20</s><sprite name=\"TestArrow\" tint=1><b>25</b>","Damage 20 → 25 (+5 / +25%)"),
     ("Cooldown <s>10</s><sprite name=\"TestArrow\"><b>8</b>","Cooldown 10 → 8 (-2 / -20%)"),
     ("Damage <s>0</s><sprite name=\"TestArrow\"><b>5</b>","Damage 0 → 5 (+5)"),
-    ("Schaden <s>2,5</s><sprite name=\"TestArrow\"><b>3,75</b>","Schaden 2,5 → 3,75 (+1,25 / +50%)"),
+    ("Damage <s>2,5</s><sprite name=\"TestArrow\"><b>3,75</b>","Damage 2,5 → 3,75 (+1.25 / +50%)"),
     ("Damage <s>20</s><sprite name=\"TestArrow\"><b>20</b>","Damage 20 → 20 (=)"),
     ("Effect <s>Fire</s><sprite name=\"TestArrow\"><b>Ice</b>","Effect Fire → Ice"),
     ("Damage <s>10-20</s><sprite name=\"TestArrow\"><b>20-40</b>","Damage 10-20 → 20-40"),
