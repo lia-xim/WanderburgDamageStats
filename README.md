@@ -30,7 +30,7 @@ Für eine spätere Neuinstallation:
 
 1. BepInEx 6 **Unity IL2CPP Windows x64** nach der [offiziellen Anleitung](https://docs.bepinex.dev/master/articles/user_guide/installation/unity_il2cpp.html) installieren. Verwendeter Build: `6.0.0-be.788+5b766a3` von [builds.bepinex.dev](https://builds.bepinex.dev/projects/bepinex_be).
 2. Spiel einmal starten, damit `BepInEx/interop` erzeugt wird, und schließen.
-3. `BepInEx/plugins/WanderburgBuildCoach.dll` aus dem [aktuellen GitHub-Release](https://github.com/lia-xim/WanderburgBuildCoach/releases/latest) in denselben Unterordner des Spiels kopieren.
+3. `BepInEx/plugins/WanderburgBuildCoach.dll` aus den [GitHub-Releases](https://github.com/lia-xim/WanderburgBuildCoach/releases) in denselben Unterordner des Spiels kopieren.
 
 Wanderburg anschließend immer über Steam starten. Ein direkter Start von `Wanderburg.exe` initialisiert in der getesteten Version Steamworks nicht; dadurch können Steam-Statistiken und Leaderboards für diesen Run ausfallen.
 
