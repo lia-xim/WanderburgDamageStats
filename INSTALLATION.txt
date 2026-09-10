@@ -1,0 +1,30 @@
+WANDERBURG BUILD COACH INSTALLIEREN
+===================================
+
+Du hast BepInEx schon installiert?
+
+1. Öffne im entpackten ZIP den Ordner:
+   BepInEx\plugins
+
+2. Kopiere WanderburgBuildCoach.dll nach:
+   C:\Program Files (x86)\Steam\steamapps\common\Wanderburg Game\BepInEx\plugins\
+
+3. Starte Wanderburg über Steam.
+
+Fertig. Links oben sollte im Run BUILD COACH stehen. Mit F8 kannst du die Anzeige ein- und ausblenden.
+
+ANDERER SPIELORDNER?
+
+Steam öffnen -> Bibliothek -> Rechtsklick auf Wanderburg -> Verwalten -> Lokale Dateien durchsuchen.
+Im geöffneten Ordner gehst du zu BepInEx\plugins und kopierst die DLL dort hinein.
+
+NOCH KEIN BEPINEX?
+
+Du brauchst BepInEx 6 für Unity IL2CPP, Windows x64. Installiere es zuerst nach der offiziellen Anleitung:
+https://docs.bepinex.dev/master/articles/user_guide/installation/unity_il2cpp.html
+
+Starte Wanderburg danach einmal über Steam, schließe es wieder und kopiere dann die Mod-DLL wie oben beschrieben.
+
+WICHTIG
+
+Starte Wanderburg über Steam und nicht direkt über Wanderburg.exe. Der direkte Start kann verhindern, dass Steam-Statistiken richtig funktionieren.

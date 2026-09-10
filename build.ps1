@@ -23,7 +23,7 @@ $stage = Join-Path $root "artifacts\WanderburgBuildCoach-$Version"
 $pluginDir = Join-Path $stage 'BepInEx\plugins'
 New-Item -ItemType Directory -Path $pluginDir -Force | Out-Null
 Copy-Item -LiteralPath (Join-Path $root 'src\bin\Release\net6.0\WanderburgBuildCoach.dll') -Destination $pluginDir -Force
-Copy-Item -LiteralPath (Join-Path $root 'README.md'),(Join-Path $root 'LICENSE'),(Join-Path $root 'scripts\Enable-Mod.ps1'),(Join-Path $root 'scripts\Disable-Mod.ps1') -Destination $stage -Force
+Copy-Item -LiteralPath (Join-Path $root 'README.md'),(Join-Path $root 'INSTALLATION.txt'),(Join-Path $root 'LICENSE'),(Join-Path $root 'scripts\Enable-Mod.ps1'),(Join-Path $root 'scripts\Disable-Mod.ps1') -Destination $stage -Force
 
 $zip = Join-Path $root "artifacts\WanderburgBuildCoach-$Version.zip"
 Compress-Archive -LiteralPath $stage -DestinationPath $zip -Force

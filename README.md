@@ -1,56 +1,88 @@
-# Wanderburg Build Coach — 0.2.0
+# Wanderburg Build Coach
 
-Ein lokaler, datengestützter Upgrade-Berater für Wanderburg EA 0.9.8, Unity 6000.0.63f1 / Windows x64 IL2CPP.
+Der Build Coach schaut während deines Runs, welche Waffen tatsächlich den Schaden machen. Sobald du ein Upgrade wählen darfst, vergleicht er die drei Karten und zeigt dir, welche davon deinen aktuellen Build voraussichtlich am stärksten verbessert.
 
-> Inoffizielles Community-Projekt. Nicht mit Randwerk verbunden oder von Randwerk unterstützt.
+Das Projekt ist eine frühe Alpha für Wanderburg EA 0.9.8 unter Windows. Es ist ein inoffizielles Community-Projekt und nicht mit Randwerk verbunden.
 
-**Status:** frühe Alpha. Die normale Kartenbewertung funktioniert; Spezial- und Legendär-Effekte werden schrittweise als eigene Regeln ergänzt.
+## Installation – ganz kurz
 
-## Bedienung
+Wenn du BepInEx bereits für Wanderburg installiert hast, brauchst du nur eine Datei zu kopieren:
 
-- Im Run zeigt der Coach den tatsächlich ausgeteilten DPS der letzten 20 Sekunden und den Schadensanteil jeder montierten Waffe.
-- Im Upgrade-Menü bewertet er die drei realen Angebote. Die Schätzung verbindet die Werteänderung der Karte mit dem Schadensanteil des betroffenen Aktiv-, Auto- oder Gesamtkanals.
-- Die stärkste berechenbare Karte wird als **Empfehlung** markiert. Sobald eine Spezial- oder legendäre Karte nicht vollständig als Zahlenmodell abbildbar ist, heißt das Ergebnis bewusst **Zahlensieger** und die Spezialkarte bleibt als „situativ“ gekennzeichnet.
-- **F8** blendet die Anzeige ein oder aus.
-- Konfiguration: `BepInEx/config/local.wanderburg.damagehud.cfg`. `Scale`, `Left` und `Top` ändern Größe und Position beim nächsten Spielstart. Im Upgrade-Menü sitzt die Anzeige am linken Rand neben den Karten; im Run hält sie Abstand zur Fortschrittsleiste.
+1. Lade `WanderburgBuildCoach-0.2.0.zip` bei den [GitHub-Releases](https://github.com/lia-xim/WanderburgBuildCoach/releases) herunter.
+2. Entpacke das ZIP.
+3. Kopiere diese Datei:
 
-## Was die Empfehlung bedeutet
+   ```text
+   BepInEx\plugins\WanderburgBuildCoach.dll
+   ```
 
-Der Coach liest Wanderburgs vorhandene `StatisticsQuery.CurrentRun`-Zähler in kurzen Abständen aus. Er patcht keine Gameplay- oder Statistikmethode. Aus den positiven Zählerdifferenzen entsteht ein Ringpuffer mit 20 Sekunden aggregierten Werten; der Mod verändert weder Kampfwerte noch Save-Daten. Falls Wanderburg die Kanal-Tags in den Statistik-IDs bereitstellt, trennt der Coach Aktiv- und Automatikschaden. Andernfalls bewertet er konservativ mit dem gesamten Modulanteil.
+4. Füge sie hier ein:
 
-Für normale Zahlen-Upgrades berechnet der Coach die relative Änderung. Schaden und Cooldown zählen direkt, Ladungen, Dauer, Größe und Geschwindigkeit erhalten konservative Gewichte. Anschließend wird der Effekt mit dem tatsächlich betroffenen Schadensanteil multipliziert. `≈ +12% Build-Output` ist deshalb eine begründete Schätzung für den aktuellen Run, keine Garantie für jeden Gegner oder jede Spielsituation.
+   ```text
+   C:\Program Files (x86)\Steam\steamapps\common\Wanderburg Game\BepInEx\plugins\
+   ```
 
-Die kosmetischen 3D-Vorschauobjekte sind keine verlässliche Quelle für Upgrade-Zahlen: Das Spiel erzeugt sie mit Seltenheit 0 und vereinfachten Attributen. Der Coach liest deshalb die originalen Vergleichszeilen der tatsächlichen Karten. Spezialeffekte werden erst empfohlen, wenn ihre individuelle Mechanik modelliert ist.
+5. Starte Wanderburg ganz normal über Steam.
 
-## Installation und Abschalten
+Das war’s. Im Run sollte links oben **BUILD COACH** erscheinen. Mit **F8** kannst du die Anzeige jederzeit ein- und ausblenden.
 
-Auf dem hier verwendeten PC sind BepInEx und die Mod-DLL bereits im Spielordner installiert.
+Du hast Wanderburg in einer anderen Steam-Bibliothek installiert? Öffne in Steam deine **Bibliothek**, klicke Wanderburg mit der rechten Maustaste an und wähle **Verwalten → Lokale Dateien durchsuchen**. Der Ordner, der sich öffnet, ist der richtige. Von dort gehst du weiter zu `BepInEx\plugins`.
 
-Für eine spätere Neuinstallation:
+## Wenn du BepInEx noch nicht hast
 
-1. BepInEx 6 **Unity IL2CPP Windows x64** nach der [offiziellen Anleitung](https://docs.bepinex.dev/master/articles/user_guide/installation/unity_il2cpp.html) installieren. Verwendeter Build: `6.0.0-be.788+5b766a3` von [builds.bepinex.dev](https://builds.bepinex.dev/projects/bepinex_be).
-2. Spiel einmal starten, damit `BepInEx/interop` erzeugt wird, und schließen.
-3. `BepInEx/plugins/WanderburgBuildCoach.dll` aus den [GitHub-Releases](https://github.com/lia-xim/WanderburgBuildCoach/releases) in denselben Unterordner des Spiels kopieren.
+Der Mod braucht BepInEx 6 für **Unity IL2CPP, Windows x64**. Nimm nicht versehentlich die Mono-Version.
 
-Wanderburg anschließend immer über Steam starten. Ein direkter Start von `Wanderburg.exe` initialisiert in der getesteten Version Steamworks nicht; dadurch können Steam-Statistiken und Leaderboards für diesen Run ausfallen.
+1. Installiere BepInEx nach der [offiziellen Anleitung](https://docs.bepinex.dev/master/articles/user_guide/installation/unity_il2cpp.html). Getestet wurde Build `6.0.0-be.788+5b766a3` von [builds.bepinex.dev](https://builds.bepinex.dev/projects/bepinex_be).
+2. Starte Wanderburg einmal über Steam und schließe es wieder. BepInEx legt dabei seine Ordner an.
+3. Kopiere anschließend `WanderburgBuildCoach.dll` wie oben beschrieben nach `BepInEx\plugins`.
 
-Nur diesen Mod abschalten: Spiel schließen und `Disable-Mod.ps1` aus dem Release-Paket ausführen. `Enable-Mod.ps1` aktiviert ihn wieder. BepInEx und andere Plugins bleiben erhalten. Alternativ F8 verwenden, um nur die Anzeige auszublenden.
+Eine noch kürzere Kopieranleitung liegt im Release-ZIP als `INSTALLATION.txt`.
 
-## Quellcode und Prüfung
+## Was du im Spiel siehst
 
-`src/` enthält den vollständigen Mod-Quellcode. Build mit einem .NET-6-kompatiblen SDK:
+- Im Run: tatsächliche DPS der letzten 20 Sekunden und Schadensanteil jeder montierten Waffe.
+- Im Upgrade-Menü: eine Bewertung der drei angebotenen Karten.
+- Bei normalen Zahlen-Upgrades: eine Empfehlung für die stärkste berechenbare Karte.
+- Bei Spezial- oder Legendär-Effekten: **Zahlensieger** statt einer vorgetäuschten sicheren Empfehlung. Noch nicht vollständig modellierte Effekte heißen **situativ**.
+
+## Mod abschalten oder entfernen
+
+Drücke **F8**, wenn du nur die Anzeige ausblenden möchtest.
+
+Für eine dauerhafte Deaktivierung schließt du zuerst das Spiel und startest dann `Disable-Mod.ps1` aus dem Release-Paket. `Enable-Mod.ps1` schaltet den Mod später wieder ein.
+
+Zum vollständigen Entfernen löschst du bei geschlossenem Spiel nur diese Datei:
+
+```text
+BepInEx\plugins\WanderburgBuildCoach.dll
+```
+
+## Falls der Mod nicht erscheint
+
+- Prüfe, ob die DLL wirklich direkt in `BepInEx\plugins` liegt.
+- Starte das Spiel über Steam. Beim direkten Start von `Wanderburg.exe` wurde Steamworks in unserem Test nicht richtig initialisiert; dadurch können Steam-Statistiken und Leaderboards für diesen Run ausfallen.
+- Öffne `BepInEx\LogOutput.log` im Spielordner und suche nach `Wanderburg Build Coach 0.2.0`.
+- Die Einstellungen liegen in `BepInEx\config\io.github.lia-xim.wanderburg-build-coach.cfg`. Dort kannst du Größe und Position des Fensters ändern.
+
+## Wie die Empfehlung berechnet wird
+
+Der Coach liest Wanderburgs vorhandene `StatisticsQuery.CurrentRun`-Zähler in kurzen Abständen aus. Er patcht keine Gameplay- oder Statistikmethode und verändert weder Kampfwerte noch Save-Daten.
+
+Für normale Upgrades berechnet er die relative Änderung. Schaden und Cooldown zählen direkt. Ladungen, Dauer, Größe und Geschwindigkeit erhalten vorsichtige Gewichtungen. Danach verbindet der Coach den Karteneffekt mit dem tatsächlichen Schadensanteil der betroffenen Waffe. Eine Anzeige wie `≈ +12% Build-Output` ist deshalb eine begründete Schätzung für diesen Run, keine Garantie für jede Spielsituation.
+
+## Selbst bauen
+
+Der Quellcode liegt vollständig unter `src/`. Du brauchst ein .NET-6-kompatibles SDK und eine lokale Wanderburg-Installation mit erzeugten BepInEx-Interop-Dateien.
 
 ```powershell
 dotnet build ./src/WanderburgBuildCoach.csproj -c Release
 dotnet run --project ./tests/PreviewTests.csproj -c Release
 ```
 
-`build.ps1` führt beide Schritte aus und erzeugt anschließend das installierbare ZIP unter `artifacts/`.
+`build.ps1` führt Build und Tests aus und erstellt danach das installierbare ZIP unter `artifacts/`. Bei einem anderen Spielpfad kannst du ihn so angeben:
 
-Bei abweichendem Spielpfad `-p:GameDir="D:\SteamLibrary\steamapps\common\Wanderburg Game"` an den Build anhängen. Referenzen werden aus der lokalen BepInEx-Installation gelesen. Spielcode und Spielassets sind nicht im Paket enthalten.
+```powershell
+./build.ps1 -GameDir "D:\SteamLibrary\steamapps\common\Wanderburg Game"
+```
 
-Nach Spielupdates können sich interne Funktionen und Texte ändern; die hier dokumentierte Version ist die getestete Grundlage.
-
-## Lizenz
-
-Der eigene Quellcode steht unter der [MIT-Lizenz](LICENSE). Wanderburg, seine Namen und Inhalte gehören den jeweiligen Rechteinhabern. Dieses Repository enthält keine Spieldateien oder extrahierten Assets.
+Nach Spielupdates können sich interne Funktionen und Texte ändern. Dieses Repository enthält keine Spieldateien oder extrahierten Assets. Der eigene Quellcode steht unter der [MIT-Lizenz](LICENSE).
