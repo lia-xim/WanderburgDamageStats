@@ -74,7 +74,7 @@ public sealed class DamageOverlay : MonoBehaviour
             var activeChoices=Choices.Values.Where(c=>c.Option && c.Option.gameObject.activeInHierarchy && c.Option.HasConfiguredOption)
                 .OrderBy(c=>c.Option.transform.position.x).Take(3).ToArray();
             bool showingUpgrade=gm.upgradeMenuOpen || activeChoices.Length>0;
-            var content=new System.Text.StringBuilder("<color=#F3C879><b>DAMAGE STATS</b></color>\n");
+            var content=new System.Text.StringBuilder("<color=#F3C879><b>DAMAGE STATS</b></color> <size=58%><color=#9A9A9A>v0.2.4</color></size>\n");
             content.Append(recentAll>0
                ?$"<size=85%>Last 20 s: {Number(recentAll/observedSeconds)} DPS · F8</size>\n\n"
                 :"<size=85%>Waiting for combat damage · F8</size>\n\n");
@@ -95,7 +95,7 @@ public sealed class DamageOverlay : MonoBehaviour
                 content.Append("<color=#F3C879><b>UPGRADE RECOMMENDATION</b></color>");
                 if(winner!=null)
                 {
-                    content.Append($"\n<color=#8FE3A1><b>→ {(winner.Assessment.HasUnmodelledEffect?"NUMBERS PICK":"BEST PICK")}: CARD {winner.Card}</b></color>");
+                    content.Append($"\n<color=#8FE3A1><b>→ {(winner.Assessment.HasUnmodelledEffect || ranked.Any(r=>r.Assessment.HasUnmodelledEffect)?"DAMAGE PICK":"BEST PICK")}: CARD {winner.Card}</b></color>");
                     content.Append($"\n{Clean(winner.Choice.Name)} · {winner.Choice.Kind}");
                     content.Append(winner.Assessment.EstimatedBuildGain.HasValue
                         ?$"\n<color=#8FE3A1>≈ +{Percent(winner.Assessment.EstimatedBuildGain.Value)} Build-Output</color>"
@@ -110,6 +110,11 @@ public sealed class DamageOverlay : MonoBehaviour
                     content.Append($"\n<size=82%>{winner.Assessment.MainReason}");
                     if(winner.ChannelShare.HasValue) content.Append($" · affects {Percent(winner.ChannelShare.Value)} of your damage");
                     content.Append("</size>");
+                    var higherRarityAlternative=ranked
+                        .Where(r=>r.Card!=winner.Card && r.Choice.Rarity>winner.Choice.Rarity && r.Assessment.HasUnmodelledEffect)
+                        .OrderByDescending(r=>r.Choice.Rarity).FirstOrDefault();
+                    if(higherRarityAlternative!=null)
+                        content.Append($"\n<color=#F3C879><size=82%>Card {higherRarityAlternative.Card} has higher-rarity utility outside the DPS model.</size></color>");
                 }
                 else content.Append("\nNo reliable numerical recommendation yet.");
 
@@ -119,7 +124,7 @@ public sealed class DamageOverlay : MonoBehaviour
                     string value=item.Assessment.UpgradeStrength<=0 && item.Assessment.HasUnmodelledEffect
                         ?"situational"
                         :item.Assessment.EstimatedBuildGain.HasValue
-                            ?"≈ +"+Percent(item.Assessment.EstimatedBuildGain.Value)+(item.Assessment.HasUnmodelledEffect?" (numbers)":"")
+                            ?"≈ +"+Percent(item.Assessment.EstimatedBuildGain.Value)+(item.Assessment.HasUnmodelledEffect?" (damage model)":"")
                             :"+"+Percent(item.Assessment.UpgradeStrength);
                     content.Append($"\nCard {item.Card}: {Clean(item.Choice.Name)} · {value}");
                 }

@@ -10,7 +10,7 @@ using Object = UnityEngine.Object;
 
 namespace WanderburgDamageHUD;
 
-[BepInPlugin("io.github.lia-xim.wanderburg-damage-stats", "Wanderburg Damage Stats", "0.2.3")]
+[BepInPlugin("io.github.lia-xim.wanderburg-damage-stats", "Wanderburg Damage Stats", "0.2.4")]
 public sealed class Plugin : BasePlugin
 {
     internal static ManualLogSource Logger = null!;

@@ -13,7 +13,7 @@ The recommendation uses your current run as its starting point and estimates how
 
 Rarity does not receive an automatic score bonus. The rolled before/after values on the card already represent the stronger upgrade. Cooldown cards are scored conservatively from damage actually observed on the affected ability or auto-attack channel.
 
-Special and legendary effects are harder to compare reliably. The mod marks those as situational when it cannot model the full effect.
+Special, legendary, and utility effects are harder to compare reliably. When duration, range, projectile speed, cooldown utilization, or another important effect remains outside the model, the overlay labels its recommendation as a [b]DAMAGE PICK[/b] rather than claiming it is the universally best card.
 
 [b]This is an early alpha for Wanderburg EA 0.9.8 on Windows.[/b]
 

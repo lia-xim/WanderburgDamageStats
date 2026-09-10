@@ -1,5 +1,13 @@
 # Wanderburg Damage Stats – Changelog
 
+## 0.2.4 - 2026-09-10
+
+- Shows the active mod version unobtrusively in the overlay header.
+- Uses `DAMAGE PICK` when any offered card contains utility outside the DPS model.
+- Calls out higher-rarity alternatives with unmodelled utility instead of presenting a lower-rarity damage card as universally best.
+- Stops treating duration, size, range, and projectile speed as guaranteed DPS.
+- Further discounts cooldown and charge gains because their value depends on player usage and encounter conditions.
+
 ## 0.2.3 - 2026-09-10
 
 - Parses numerical values wrapped in rarity-color markup, fixing Uncommon cards incorrectly shown as situational.

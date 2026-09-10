@@ -4,6 +4,6 @@ The game is built with Unity IL2CPP. I used BepInEx to load a small C# plugin an
 
 The plugin reads the game's [code]StatisticsQuery.CurrentRun[/code] counters at short intervals. It calculates the change in total damage between samples, groups it by weapon, and turns that into a rolling 20-second DPS view.
 
-On the upgrade screen, it reads the text and numerical values already assigned to the three cards. It then estimates the result after each upgrade and combines that change with the affected weapon's current share of the build. Ability cooldown only receives credit for observed ability damage; it does not claim the weapon's unrelated auto-attack damage.
+On the upgrade screen, it reads the text and numerical values already assigned to the three cards. It estimates direct damage changes and combines them with the affected weapon's current share of the build. Ability cooldown only receives credit for observed ability damage; it does not claim the weapon's unrelated auto-attack damage. Utility such as duration, range, size, and projectile speed is shown as context but is not presented as guaranteed DPS.
 
 The plugin does not change weapon damage, combat rules, save data, or Steam statistics. Its only Harmony patch observes the upgrade-card UI so it knows which choices are currently visible.

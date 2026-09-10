@@ -24,11 +24,11 @@ if(Math.Abs(damage.UpgradeStrength-.5f)>.001f || Math.Abs(damage.EstimatedBuildG
     throw new Exception($"Damage assessment incorrect: {damage}");
 
 var cooldown=BuildCoachCore.Assess(new[]{"<s>30s</s><sprite name=\"TestArrow\"><b>26s</b> COOLDOWN ABILITY"},.5f,false);
-if(Math.Abs(cooldown.UpgradeStrength-.1f)>.001f || cooldown.MainReason!="COOLDOWN ABILITY: 30 → 26")
+if(Math.Abs(cooldown.UpgradeStrength-.061538f)>.001f || cooldown.MainReason!="COOLDOWN ABILITY: 30 → 26" || !cooldown.HasUnmodelledEffect)
     throw new Exception($"Cooldown assessment incorrect: {cooldown}");
 
 var charges=BuildCoachCore.Assess(new[]{"<s>4</s><sprite name=\"TestArrow\"><b>7</b> CHARGES!"},1f,false);
-if(Math.Abs(charges.UpgradeStrength-.4875f)>.001f)
+if(Math.Abs(charges.UpgradeStrength-.3f)>.001f || !charges.HasUnmodelledEffect)
     throw new Exception($"Charge assessment incorrect: {charges}");
 
 var special=BuildCoachCore.Assess(Array.Empty<string>(),.8f,true);
@@ -55,4 +55,12 @@ var unknownCooldownShare=BuildCoachCore.ResolveAffectedShare("Cooldown",new[]{"1
 if(unknownCooldownShare.GetValueOrDefault()!=0f)
     throw new Exception($"Unattributed cooldown damage must remain conservative: {unknownCooldownShare}");
 
-Console.WriteLine("PASS: 8 Damage Stats recommendation cases (damage share, conservative cooldown, charge weighting, unmodelled special, numeric legendary projection, ability/auto/unknown cooldown channels).");
+var epicUtility=BuildCoachCore.Assess(new[]{
+    "<s>1.6</s><sprite name=\"TestArrow\"><b>2</b> DAMAGE MULT",
+    "<s>4s</s><sprite name=\"TestArrow\"><b>5.3s</b> DURATION",
+    "<s>0</s><sprite name=\"TestArrow\"><b>50</b> PROJECTILE SPEED"
+},.462f,false);
+if(Math.Abs(epicUtility.UpgradeStrength-.25f)>.001f || !epicUtility.HasUnmodelledEffect)
+    throw new Exception($"Epic utility must score direct damage only and remain conditional: {epicUtility}");
+
+Console.WriteLine("PASS: 9 Damage Stats recommendation cases (damage share, conservative cooldown/charges, unmodelled special, numeric legendary projection, ability/auto/unknown cooldown channels, epic utility confidence).");

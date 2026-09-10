@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace WanderburgDamageHUD;
 
-internal sealed record UpgradeChange(string Label, float Before, float After, bool LowerIsBetter, float Weight)
+internal sealed record UpgradeChange(string Label, float Before, float After, bool LowerIsBetter, float Weight, bool Conditional)
 {
     internal float RelativeBenefit
     {
@@ -65,8 +65,8 @@ internal static class BuildCoachCore
                 string prefix = Clean(raw.Substring(prefixStart, match.Index - prefixStart));
                 string label = HasLetters(suffix) ? suffix : prefix;
                 if (string.IsNullOrWhiteSpace(label)) label = "Value";
-                var (lowerIsBetter, weight) = Classify(label);
-                changes.Add(new UpgradeChange(label.Trim(), before, after, lowerIsBetter, weight));
+                var (lowerIsBetter, weight, conditional) = Classify(label);
+                changes.Add(new UpgradeChange(label.Trim(), before, after, lowerIsBetter, weight, conditional));
             }
         }
         return changes;
@@ -93,7 +93,7 @@ internal static class BuildCoachCore
         string reason = best == null
             ? (special ? "Special effect is not modelled yet" : "No calculable stat change")
             : $"{best.Label}: {Format(best.Before)} → {Format(best.After)}";
-        return new UpgradeAssessment(strength, buildGain, reason, special || changes.Count == 0);
+        return new UpgradeAssessment(strength, buildGain, reason, special || changes.Count == 0 || changes.Any(change => change.Conditional));
     }
 
     internal static float? ResolveAffectedShare(string kind, IEnumerable<string> rawLines, float active, float auto, float unknown, float total)
@@ -120,16 +120,16 @@ internal static class BuildCoachCore
         return Math.Clamp(affected / total, 0f, 1f);
     }
 
-    private static (bool LowerIsBetter, float Weight) Classify(string label)
+    private static (bool LowerIsBetter, float Weight, bool Conditional) Classify(string label)
     {
         string key = label.ToUpperInvariant();
-        if (ContainsAny(key, "COOLDOWN", "NACHLAD", "ABKLING")) return (true, .65f);
-        if (ContainsAny(key, "DAMAGE", "SCHADEN")) return (false, 1f);
-        if (ContainsAny(key, "CHARGE", "LADUNG", "AMMO", "MUNITION", "PROJECTILE", "PROJEKTIL")) return (false, .65f);
-        if (ContainsAny(key, "DURATION", "DAUER")) return (false, .55f);
-        if (ContainsAny(key, "SIZE", "RADIUS", "RANGE", "GRÖ", "GROE", "REICHWEITE")) return (false, .3f);
-        if (ContainsAny(key, "SPEED", "GESCHW")) return (false, .3f);
-        return (false, .2f);
+        if (ContainsAny(key, "COOLDOWN", "NACHLAD", "ABKLING")) return (true, .4f, true);
+        if (ContainsAny(key, "DAMAGE", "SCHADEN")) return (false, 1f, false);
+        if (ContainsAny(key, "CHARGE", "LADUNG", "AMMO", "MUNITION", "PROJECTILE COUNT", "PROJEKTILANZAHL")) return (false, .4f, true);
+        if (ContainsAny(key, "DURATION", "DAUER")) return (false, 0f, true);
+        if (ContainsAny(key, "SIZE", "RADIUS", "RANGE", "GRÖ", "GROE", "REICHWEITE")) return (false, 0f, true);
+        if (ContainsAny(key, "SPEED", "GESCHW")) return (false, 0f, true);
+        return (false, 0f, true);
     }
 
     private static bool ContainsAny(string value, params string[] needles) => needles.Any(value.Contains);
