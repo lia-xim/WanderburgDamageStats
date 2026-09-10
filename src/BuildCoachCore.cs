@@ -29,8 +29,11 @@ internal sealed record UpgradeAssessment(float UpgradeStrength, float? Estimated
 internal static class BuildCoachCore
 {
     private static readonly Regex Comparison = new(
-        @"<s>\s*(?<before>[+-]?\d+(?:[.,]\d+)?)(?<beforeUnit>\s*[a-zA-Z%]*)\s*</s>.*?<b>\s*(?<after>[+-]?\d+(?:[.,]\d+)?)(?<afterUnit>\s*[a-zA-Z%]*)\s*</b>",
+        @"<s>(?<before>.*?)</s>.*?<b>(?<after>.*?)</b>",
         RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+    private static readonly Regex NumberWithOptionalUnit = new(
+        @"^\s*(?<value>[+-]?\d+(?:[.,]\d+)?)(?:\s*[a-zA-Z%]*)?\s*$",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     internal static IReadOnlyList<UpgradeChange> ParseChanges(IEnumerable<string> rawLines)
     {
@@ -42,8 +45,8 @@ internal static class BuildCoachCore
             for (int i = 0; i < matches.Count; i++)
             {
                 var match = matches[i];
-                if (!TryNumber(match.Groups["before"].Value, out var before) ||
-                    !TryNumber(match.Groups["after"].Value, out var after)) continue;
+                if (!TryTaggedNumber(match.Groups["before"].Value, out var before) ||
+                    !TryTaggedNumber(match.Groups["after"].Value, out var after)) continue;
 
                 int suffixEnd = raw.Length;
                 int nextComparison = raw.IndexOf("<s>", match.Index + match.Length, StringComparison.OrdinalIgnoreCase);
@@ -93,10 +96,34 @@ internal static class BuildCoachCore
         return new UpgradeAssessment(strength, buildGain, reason, special || changes.Count == 0);
     }
 
+    internal static float? ResolveAffectedShare(string kind, IEnumerable<string> rawLines, float active, float auto, float unknown, float total)
+    {
+        if (total <= 0) return null;
+        bool hasChannelSplit = active + auto > 0;
+        if (!hasChannelSplit)
+        {
+            // Without channel attribution we cannot know whether an ability cooldown
+            // affects the damage that was observed for this module.
+            if (kind == "Cooldown") return 0f;
+            return Math.Clamp((active + auto + unknown) / total, 0f, 1f);
+        }
+
+        string text = string.Join(" ", rawLines ?? Array.Empty<string>()).ToUpperInvariant();
+        float affected = kind switch
+        {
+            "Active" => active,
+            "Auto" => auto,
+            "Cooldown" when ContainsAny(text, "AUTO", "PASSIVE") => auto,
+            "Cooldown" => active,
+            _ => active + auto + unknown
+        };
+        return Math.Clamp(affected / total, 0f, 1f);
+    }
+
     private static (bool LowerIsBetter, float Weight) Classify(string label)
     {
         string key = label.ToUpperInvariant();
-        if (ContainsAny(key, "COOLDOWN", "NACHLAD", "ABKLING")) return (true, 1f);
+        if (ContainsAny(key, "COOLDOWN", "NACHLAD", "ABKLING")) return (true, .65f);
         if (ContainsAny(key, "DAMAGE", "SCHADEN")) return (false, 1f);
         if (ContainsAny(key, "CHARGE", "LADUNG", "AMMO", "MUNITION", "PROJECTILE", "PROJEKTIL")) return (false, .65f);
         if (ContainsAny(key, "DURATION", "DAUER")) return (false, .55f);
@@ -109,6 +136,13 @@ internal static class BuildCoachCore
     private static bool HasLetters(string value) => value.Any(char.IsLetter);
     private static bool TryNumber(string value, out float number) =>
         float.TryParse(value.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out number);
+    private static bool TryTaggedNumber(string value, out float number)
+    {
+        number = 0f;
+        string clean = Regex.Replace(value ?? "", @"<[^>]*>", "");
+        var match = NumberWithOptionalUnit.Match(clean);
+        return match.Success && TryNumber(match.Groups["value"].Value, out number);
+    }
     private static string Clean(string value) => Regex.Replace(Regex.Replace(value ?? "", @"<sprite[^>]*>", " "), @"<[^>]*>", " ").Trim(' ', '!', ':', '-', '·');
     private static string Format(float value) => value.ToString("0.##", CultureInfo.InvariantCulture);
 }

@@ -85,7 +85,7 @@ public sealed class DamageOverlay : MonoBehaviour
                 {
                     var c=activeChoices[i];
                     string moduleId=ResolveModuleId(c,modules);
-                    float? share=ResolveChannelShare(moduleId,c.Kind,scoreFromRecent,scoreAll);
+                    float? share=ResolveChannelShare(moduleId,c.Kind,c.RawLines,scoreFromRecent,scoreAll);
                     ranked.Add(new(c,i+1,BuildCoachCore.Assess(c.RawLines,share,c.HasSpecialEffect),share));
                 }
                 var calculable=ranked.Where(r=>r.Assessment.IsNumericallyComparable)
@@ -215,13 +215,10 @@ public sealed class DamageOverlay : MonoBehaviour
     }
 
     [HideFromIl2Cpp]
-    private static float? ResolveChannelShare(string moduleId,string kind,bool recent,float total)
+    private static float? ResolveChannelShare(string moduleId,string kind,string[] rawLines,bool recent,float total)
     {
         if(total<=0 || string.IsNullOrWhiteSpace(moduleId)) return null;
         var value=recent?CombatTelemetry.Recent(moduleId):CombatTelemetry.Cumulative(moduleId);
-        float moduleTotal=value.Active+value.Auto+value.Unknown;
-        bool hasChannelSplit=value.Active+value.Auto>0;
-        float affected=kind switch { "Active" when hasChannelSplit=>value.Active, "Auto" when hasChannelSplit=>value.Auto, _=>moduleTotal };
-        return Mathf.Clamp01(affected/total);
+        return BuildCoachCore.ResolveAffectedShare(kind,rawLines,value.Active,value.Auto,value.Unknown,total);
     }
 }

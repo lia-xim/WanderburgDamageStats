@@ -9,6 +9,7 @@ var cases = new (string Input,string Expected)[]
     ("Damage <s>20</s><sprite name=\"TestArrow\"><b>20</b>","Damage 20 → 20 (=)"),
     ("Effect <s>Fire</s><sprite name=\"TestArrow\"><b>Ice</b>","Effect Fire → Ice"),
     ("Damage <s>10-20</s><sprite name=\"TestArrow\"><b>20-40</b>","Damage 10-20 → 20-40"),
+    ("Damage <s><color=#777>1</color></s><sprite name=\"TestArrow\"><b><color=#69f>46</color></b>","Damage 1 → 46 (+45 / +4500%)"),
     ("<color=red>Special effect</color>","Special effect"),
 };
 foreach (var test in cases)
@@ -16,14 +17,14 @@ foreach (var test in cases)
     var actual=PreviewText.Format(test.Input);
     if(actual!=test.Expected) throw new Exception($"Expected: {test.Expected}\nActual: {actual}");
 }
-Console.WriteLine($"PASS: {cases.Length} upgrade comparison cases (gain, reduction, zero, decimal comma, unchanged, nonnumeric, range, special).");
+Console.WriteLine($"PASS: {cases.Length} upgrade comparison cases (gain, reduction, zero, decimal comma, unchanged, nonnumeric, range, nested rarity markup, special).");
 
 var damage=BuildCoachCore.Assess(new[]{"Damage <s>40</s><sprite name=\"TestArrow\"><b>60</b> DAMAGE!"},.4f,false);
 if(Math.Abs(damage.UpgradeStrength-.5f)>.001f || Math.Abs(damage.EstimatedBuildGain!.Value-.2f)>.001f)
     throw new Exception($"Damage assessment incorrect: {damage}");
 
 var cooldown=BuildCoachCore.Assess(new[]{"<s>30s</s><sprite name=\"TestArrow\"><b>26s</b> COOLDOWN ABILITY"},.5f,false);
-if(cooldown.UpgradeStrength<.15f || cooldown.UpgradeStrength>.16f || cooldown.MainReason!="COOLDOWN ABILITY: 30 → 26")
+if(Math.Abs(cooldown.UpgradeStrength-.1f)>.001f || cooldown.MainReason!="COOLDOWN ABILITY: 30 → 26")
     throw new Exception($"Cooldown assessment incorrect: {cooldown}");
 
 var charges=BuildCoachCore.Assess(new[]{"<s>4</s><sprite name=\"TestArrow\"><b>7</b> CHARGES!"},1f,false);
@@ -44,4 +45,14 @@ var projected=numericLegendary.ProjectedDps(36.46f);
 if(!projected.HasValue || projected.Value<210f)
     throw new Exception($"Projected DPS missing for numeric legendary: {projected}");
 
-Console.WriteLine("PASS: 5 Damage Stats recommendation cases (damage share, cooldown benefit, charge weighting, unmodelled special, numeric legendary projection).");
+var abilityCooldownShare=BuildCoachCore.ResolveAffectedShare("Cooldown",new[]{"15 → 12 COOLDOWN ABILITY"},0f,20f,0f,31f);
+if(abilityCooldownShare.GetValueOrDefault()!=0f)
+    throw new Exception($"Ability cooldown must not claim auto-attack damage: {abilityCooldownShare}");
+var autoCooldownShare=BuildCoachCore.ResolveAffectedShare("Cooldown",new[]{"15 → 12 AUTO COOLDOWN"},0f,20f,0f,31f);
+if(Math.Abs(autoCooldownShare.GetValueOrDefault()-(20f/31f))>.001f)
+    throw new Exception($"Auto cooldown must use observed auto damage: {autoCooldownShare}");
+var unknownCooldownShare=BuildCoachCore.ResolveAffectedShare("Cooldown",new[]{"15 → 12 COOLDOWN ABILITY"},0f,0f,20f,31f);
+if(unknownCooldownShare.GetValueOrDefault()!=0f)
+    throw new Exception($"Unattributed cooldown damage must remain conservative: {unknownCooldownShare}");
+
+Console.WriteLine("PASS: 8 Damage Stats recommendation cases (damage share, conservative cooldown, charge weighting, unmodelled special, numeric legendary projection, ability/auto/unknown cooldown channels).");

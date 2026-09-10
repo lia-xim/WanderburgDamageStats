@@ -1,5 +1,12 @@
 # Wanderburg Damage Stats – Changelog
 
+## 0.2.3 - 2026-09-10
+
+- Parses numerical values wrapped in rarity-color markup, fixing Uncommon cards incorrectly shown as situational.
+- Scores ability cooldown from observed ability damage rather than the weapon's entire damage share.
+- Applies a conservative utilization factor to cooldown improvements.
+- Keeps rarity out of the score because the rolled before/after values already reflect it.
+
 ## 0.2.2 - 2026-09-10
 
 - Keeps numerical legendary and special cards in the ranking instead of discarding them as purely situational.
