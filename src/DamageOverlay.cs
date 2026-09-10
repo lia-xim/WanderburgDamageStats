@@ -74,7 +74,7 @@ public sealed class DamageOverlay : MonoBehaviour
             var activeChoices=Choices.Values.Where(c=>c.Option && c.Option.gameObject.activeInHierarchy && c.Option.HasConfiguredOption)
                 .OrderBy(c=>c.Option.transform.position.x).Take(3).ToArray();
             bool showingUpgrade=gm.upgradeMenuOpen || activeChoices.Length>0;
-            var content=new System.Text.StringBuilder("<color=#F3C879><b>DAMAGE STATS</b></color> <size=58%><color=#9A9A9A>v0.2.4</color></size>\n");
+            var content=new System.Text.StringBuilder("<color=#F3C879><b>DAMAGE STATS</b></color> <size=58%><color=#9A9A9A>v0.3.0</color></size>\n");
             content.Append(recentAll>0
                ?$"<size=85%>Last 20 s: {Number(recentAll/observedSeconds)} DPS · F8</size>\n\n"
                 :"<size=85%>Waiting for combat damage · F8</size>\n\n");
@@ -86,7 +86,12 @@ public sealed class DamageOverlay : MonoBehaviour
                     var c=activeChoices[i];
                     string moduleId=ResolveModuleId(c,modules);
                     float? share=ResolveChannelShare(moduleId,c.Kind,c.RawLines,scoreFromRecent,scoreAll);
-                    ranked.Add(new(c,i+1,BuildCoachCore.Assess(c.RawLines,share,c.HasSpecialEffect),share));
+                    var currentModule=ResolveModule(moduleId,modules);
+                    var previewModule=ResolvePreviewModule(c,gm.ms);
+                    var assessment=currentModule && previewModule
+                        ?BuildCoachCore.AssessProjected(WeaponStats.Read(currentModule).Profile,WeaponStats.Read(previewModule).Profile,c.Kind,c.RawLines,share,c.HasSpecialEffect)
+                        :BuildCoachCore.Assess(c.RawLines,share,c.HasSpecialEffect);
+                    ranked.Add(new(c,i+1,assessment,share));
                 }
                 var calculable=ranked.Where(r=>r.Assessment.IsNumericallyComparable)
                     .OrderByDescending(r=>r.Assessment.EstimatedBuildGain ?? r.Assessment.UpgradeStrength).ToArray();
@@ -217,6 +222,35 @@ public sealed class DamageOverlay : MonoBehaviour
             if(module && string.Equals(Clean(module.moduleName),Clean(choice.Name),StringComparison.OrdinalIgnoreCase)) return module.moduleID;
         }
         return "";
+    }
+
+    [HideFromIl2Cpp]
+    private static Module2 ResolveModule(string moduleId,Il2CppSystem.Collections.Generic.List<Module2> modules)
+    {
+        if(string.IsNullOrWhiteSpace(moduleId)) return null;
+        for(int i=0;i<modules.Count;i++)
+        {
+            var module=modules[i];
+            if(module && string.Equals(module.moduleID,moduleId,StringComparison.OrdinalIgnoreCase)) return module;
+        }
+        return null;
+    }
+
+    [HideFromIl2Cpp]
+    private static Module2 ResolvePreviewModule(ChoiceData choice,ModuleSelection selection)
+    {
+        try
+        {
+            var previews=selection?.generatedModuleUpgradePreviewObjects;
+            if(previews==null || choice.Index<0 || choice.Index>=previews.Count) return null;
+            var preview=previews[choice.Index];
+            return preview ? preview.GetComponentInChildren<Module2>(true) : null;
+        }
+        catch(Exception ex)
+        {
+            Plugin.Logger.LogDebug($"Preview stats unavailable for card {choice.Index+1}: {ex.Message}");
+            return null;
+        }
     }
 
     [HideFromIl2Cpp]

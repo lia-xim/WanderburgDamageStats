@@ -26,6 +26,8 @@ internal sealed record UpgradeAssessment(float UpgradeStrength, float? Estimated
         : null;
 }
 
+internal sealed record WeaponProfile(float ActiveDamage, float AutoDamage, float ActiveCooldown, float AutoCooldown, float ActiveAmmo, float AutoAmmo, float ActiveDuration, float AutoDuration, float ActiveSize, float AutoSize, float ActiveSpeed, float AutoSpeed);
+
 internal static class BuildCoachCore
 {
     private static readonly Regex Comparison = new(
@@ -96,6 +98,44 @@ internal static class BuildCoachCore
         return new UpgradeAssessment(strength, buildGain, reason, special || changes.Count == 0 || changes.Any(change => change.Conditional));
     }
 
+    internal static UpgradeAssessment AssessProjected(WeaponProfile before, WeaponProfile after, string kind, IEnumerable<string> rawLines, float? channelShare, bool special)
+    {
+        if (before == null || after == null) return Assess(rawLines, channelShare, special);
+        string text = string.Join(" ", rawLines ?? Array.Empty<string>()).ToUpperInvariant();
+        bool auto = kind == "Auto" || kind == "Cooldown" && ContainsAny(text, "AUTO", "PASSIVE");
+
+        float damage = Ratio(auto ? before.AutoDamage : before.ActiveDamage, auto ? after.AutoDamage : after.ActiveDamage);
+        float ammo = Ratio(auto ? before.AutoAmmo : before.ActiveAmmo, auto ? after.AutoAmmo : after.ActiveAmmo);
+        float cooldown = InverseRatio(auto ? before.AutoCooldown : before.ActiveCooldown, auto ? after.AutoCooldown : after.ActiveCooldown);
+        float duration = Ratio(auto ? before.AutoDuration : before.ActiveDuration, auto ? after.AutoDuration : after.ActiveDuration);
+        float size = Ratio(auto ? before.AutoSize : before.ActiveSize, auto ? after.AutoSize : after.ActiveSize);
+        float speed = Ratio(auto ? before.AutoSpeed : before.ActiveSpeed, auto ? after.AutoSpeed : after.ActiveSpeed);
+
+        float ammoExponent = auto ? .8f : .6f;
+        float cooldownExponent = auto ? 1f : .65f;
+        float factor = damage
+            * MathF.Pow(ammo, ammoExponent)
+            * MathF.Pow(cooldown, cooldownExponent)
+            * MathF.Pow(duration, .5f)
+            * MathF.Pow(size, .35f)
+            * MathF.Pow(speed, .15f);
+        factor = Math.Clamp(factor, .1f, 50f);
+        float strength = factor - 1f;
+        float? buildGain = channelShare.HasValue ? Math.Max(0f, strength * Math.Clamp(channelShare.Value, 0f, 1f)) : null;
+
+        var drivers = new List<string>();
+        AddDriver(drivers,"damage",damage);
+        AddDriver(drivers,"charges",ammo);
+        AddDriver(drivers,"cooldown",cooldown);
+        AddDriver(drivers,"duration",duration);
+        AddDriver(drivers,"size",size);
+        AddDriver(drivers,"speed",speed);
+        bool conditional = special || ammo != 1f || cooldown != 1f || duration != 1f || size != 1f || speed != 1f;
+        string confidence = conditional ? (auto ? "medium confidence" : "low confidence: depends on ability use") : "high confidence";
+        string reason = drivers.Count == 0 ? "Preview shows no modeled output change" : $"Projected {kind.ToLowerInvariant()} output ×{Format(factor)} · {string.Join(", ",drivers)} · {confidence}";
+        return new UpgradeAssessment(strength,buildGain,reason,conditional);
+    }
+
     internal static float? ResolveAffectedShare(string kind, IEnumerable<string> rawLines, float active, float auto, float unknown, float total)
     {
         if (total <= 0) return null;
@@ -133,6 +173,12 @@ internal static class BuildCoachCore
     }
 
     private static bool ContainsAny(string value, params string[] needles) => needles.Any(value.Contains);
+    private static float Ratio(float before,float after) => before>0 && after>0 && float.IsFinite(before) && float.IsFinite(after) ? Math.Clamp(after/before,.1f,20f) : 1f;
+    private static float InverseRatio(float before,float after) => before>0 && after>0 && float.IsFinite(before) && float.IsFinite(after) ? Math.Clamp(before/after,.1f,5f) : 1f;
+    private static void AddDriver(List<string> drivers,string name,float ratio)
+    {
+        if(Math.Abs(ratio-1f)>.005f) drivers.Add($"{name} ×{Format(ratio)}");
+    }
     private static bool HasLetters(string value) => value.Any(char.IsLetter);
     private static bool TryNumber(string value, out float number) =>
         float.TryParse(value.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out number);

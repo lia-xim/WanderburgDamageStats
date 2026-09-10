@@ -1,5 +1,12 @@
 # Wanderburg Damage Stats – Changelog
 
+## 0.3.0 - 2026-09-10
+
+- Reads each full game-generated upgrade preview and compares its complete future weapon state with the current state.
+- Models damage, cooldown, charges, duration, size, and projectile speed together instead of scoring isolated card text.
+- Calibrates the projected channel change against the damage distribution observed in the current run.
+- Includes a driver breakdown and confidence label for manual or conditional effects.
+
 ## 0.2.4 - 2026-09-10
 
 - Shows the active mod version unobtrusively in the overlay header.

@@ -1,6 +1,6 @@
 param(
     [string]$GameDir = 'C:\Program Files (x86)\Steam\steamapps\common\Wanderburg Game',
-    [string]$Version = '0.2.4'
+    [string]$Version = '0.3.0'
 )
 
 $ErrorActionPreference = 'Stop'

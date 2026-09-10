@@ -10,7 +10,7 @@ using Object = UnityEngine.Object;
 
 namespace WanderburgDamageHUD;
 
-[BepInPlugin("io.github.lia-xim.wanderburg-damage-stats", "Wanderburg Damage Stats", "0.2.4")]
+[BepInPlugin("io.github.lia-xim.wanderburg-damage-stats", "Wanderburg Damage Stats", "0.3.0")]
 public sealed class Plugin : BasePlugin
 {
     internal static ManualLogSource Logger = null!;
@@ -31,15 +31,19 @@ public sealed class Plugin : BasePlugin
     }
 }
 
-internal sealed record WeaponStats(float Active, float Auto, float ActiveCooldown, float AutoCooldown, float ActiveAmmo, float AutoAmmo)
+internal sealed record WeaponStats(float Active, float Auto, float ActiveCooldown, float AutoCooldown, float ActiveAmmo, float AutoAmmo, float ActiveDuration, float AutoDuration, float ActiveSize, float AutoSize, float ActiveSpeed, float AutoSpeed)
 {
     internal static WeaponStats Read(Module2 m) => new(
         ModuleSelection.CalculateDisplayedActiveDamage(m, m.currentActiveBaseDamage, m.flatDamageAdded, m.activeEffectPrefab),
         ModuleSelection.CalculateDisplayedPassiveDamage(m, m.currentPassiveBaseDamage, m.passiveFlatDamageAdded, m.flatDamageAdded, m.passiveAbilityPrefab),
-        m.currentActiveAbilityCooldown, m.currentAutoAttackCooldown, m.activeAmmo, m.passiveAmmo);
+        m.currentActiveAbilityCooldown, m.currentAutoAttackCooldown, m.activeAmmo, m.passiveAmmo,
+        m.activeAbilityDuration, m.passiveAbilityDuration, m.activeAbilityCurrentSize, m.autoAttackCurrentSize,
+        m.activeAbilityCurrentSpeed, m.autoAttackCurrentSpeed);
+
+    internal WeaponProfile Profile => new(Active,Auto,ActiveCooldown,AutoCooldown,ActiveAmmo,AutoAmmo,ActiveDuration,AutoDuration,ActiveSize,AutoSize,ActiveSpeed,AutoSpeed);
 }
 
-internal sealed record ChoiceData(ModuleUpgradeOption Option, string Name, string ModuleId, string Kind, string Title, int Rarity, bool HasSpecialEffect, string[] RawLines, string[] Lines);
+internal sealed record ChoiceData(ModuleUpgradeOption Option, int Index, string Name, string ModuleId, string Kind, string Title, int Rarity, bool HasSpecialEffect, string[] RawLines, string[] Lines);
 
 [HarmonyPatch(typeof(ModuleUpgradeOption), nameof(ModuleUpgradeOption.SetButton))]
 internal static class ChoicePatch
@@ -79,8 +83,9 @@ internal static class ChoicePatch
             }
             var distinctRaw = rawLines.Distinct().ToArray();
             var lines = distinctRaw.Select(PreviewText.Format).ToArray();
-            DamageOverlay.Choices[__instance.GetInstanceID()] = new(__instance, moduleNameString, moduleId, kind, upgradeTitleString, rarity, hasSpecialEffect, distinctRaw, lines);
-            Plugin.Logger.LogInfo($"Coach offer {moduleNameString}/{moduleId}: " + string.Join(" | ", lines));
+            int choiceIndex = gm && gm.ms ? (__instance == gm.ms.upgradeChoice1 ? 0 : __instance == gm.ms.upgradeChoice2 ? 1 : __instance == gm.ms.upgradeChoice3 ? 2 : -1) : -1;
+            DamageOverlay.Choices[__instance.GetInstanceID()] = new(__instance, choiceIndex, moduleNameString, moduleId, kind, upgradeTitleString, rarity, hasSpecialEffect, distinctRaw, lines);
+            Plugin.Logger.LogInfo($"Coach offer card {choiceIndex+1}, rarity {rarity}, {moduleNameString}/{moduleId}: " + string.Join(" | ", lines));
         }
         catch (Exception ex) { Plugin.Logger.LogWarning($"Upgrade preview unavailable: {ex.Message}"); }
     }

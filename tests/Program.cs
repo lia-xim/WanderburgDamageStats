@@ -63,4 +63,14 @@ var epicUtility=BuildCoachCore.Assess(new[]{
 if(Math.Abs(epicUtility.UpgradeStrength-.25f)>.001f || !epicUtility.HasUnmodelledEffect)
     throw new Exception($"Epic utility must score direct damage only and remain conditional: {epicUtility}");
 
-Console.WriteLine("PASS: 9 Damage Stats recommendation cases (damage share, conservative cooldown/charges, unmodelled special, numeric legendary projection, ability/auto/unknown cooldown channels, epic utility confidence).");
+var profileBefore=new WeaponProfile(1.6f,1f,15f,1f,1f,1f,4f,1f,1f,1f,10f,10f);
+var commonAfter=profileBefore with { AutoDamage=31f };
+var epicAfter=profileBefore with { ActiveDamage=2f, ActiveDuration=5.3f, ActiveSpeed=60f };
+var commonProjection=BuildCoachCore.AssessProjected(profileBefore,commonAfter,"Auto",new[]{"1 → 31 FLAT DAMAGE"},.462f,false);
+var epicProjection=BuildCoachCore.AssessProjected(profileBefore,epicAfter,"Active",new[]{"1.6 → 2 DAMAGE MULT","4 → 5.3 DURATION","0 → 50 PROJECTILE SPEED"},.462f,true);
+if(commonProjection.EstimatedBuildGain.GetValueOrDefault()<=epicProjection.EstimatedBuildGain.GetValueOrDefault())
+    throw new Exception($"Full preview comparison should preserve the stronger modeled outcome: common={commonProjection}, epic={epicProjection}");
+if(!epicProjection.MainReason.Contains("duration") || !epicProjection.MainReason.Contains("speed") || !epicProjection.MainReason.Contains("low confidence"))
+    throw new Exception($"Projected utility breakdown is incomplete: {epicProjection.MainReason}");
+
+Console.WriteLine("PASS: 11 Damage Stats recommendation cases (damage share, conservative cooldown/charges, unmodelled special, numeric legendary projection, ability/auto/unknown cooldown channels, epic utility confidence, full preview comparison).");
