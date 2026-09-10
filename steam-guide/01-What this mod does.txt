@@ -11,9 +11,10 @@ During a run, it shows:
 
 The recommendation uses your current run as its starting point and estimates how each card could affect the whole build. If one weapon is doing most of your damage, an upgrade for that weapon usually receives more weight.
 
+Rarity does not receive an automatic score bonus. The rolled before/after values on the card already represent the stronger upgrade. Cooldown cards are scored conservatively from damage actually observed on the affected ability or auto-attack channel.
+
 Special and legendary effects are harder to compare reliably. The mod marks those as situational when it cannot model the full effect.
 
 [b]This is an early alpha for Wanderburg EA 0.9.8 on Windows.[/b]
 
 [url=https://github.com/lia-xim/WanderburgDamageStats/releases/latest]Download the latest Wanderburg Damage Stats release on GitHub[/url]
-
