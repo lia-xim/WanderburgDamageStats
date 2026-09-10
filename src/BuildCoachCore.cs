@@ -18,7 +18,13 @@ internal sealed record UpgradeChange(string Label, float Before, float After, bo
     }
 }
 
-internal sealed record UpgradeAssessment(float UpgradeStrength, float? EstimatedBuildGain, string MainReason, bool HasUnmodelledEffect);
+internal sealed record UpgradeAssessment(float UpgradeStrength, float? EstimatedBuildGain, string MainReason, bool HasUnmodelledEffect)
+{
+    internal bool IsNumericallyComparable => UpgradeStrength > 0;
+    internal float? ProjectedDps(float currentDps) => EstimatedBuildGain.HasValue && currentDps >= 0
+        ? currentDps * (1f + EstimatedBuildGain.Value)
+        : null;
+}
 
 internal static class BuildCoachCore
 {

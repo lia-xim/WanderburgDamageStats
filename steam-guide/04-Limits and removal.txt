@@ -1,0 +1,11 @@
+This is an unofficial community project and is not affiliated with or endorsed by Randwerk. Game updates can rename or change internal code, so the mod may need an update after a new Wanderburg version.
+
+The recommendation is an estimate. Positioning, enemy types, range, area coverage, and unusual card interactions can make a situational upgrade better than the numerical winner.
+
+To remove the mod, close the game and delete:
+
+[code]BepInEx\plugins\WanderburgDamageStats.dll[/code]
+
+If it does not load, open [code]BepInEx\LogOutput.log[/code] and search for [code]Wanderburg Damage Stats[/code].
+
+Feedback and bug reports are welcome on the [url=https://github.com/lia-xim/WanderburgDamageStats/issues]GitHub issue tracker[/url].

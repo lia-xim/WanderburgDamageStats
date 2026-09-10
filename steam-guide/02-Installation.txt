@@ -1,0 +1,16 @@
+The mod uses BepInEx 6 for Unity IL2CPP, Windows x64.
+
+[olist]
+[*]Install BepInEx 6 using the [url=https://docs.bepinex.dev/master/articles/user_guide/installation/unity_il2cpp.html]official IL2CPP installation guide[/url].
+[*]Start Wanderburg once through Steam, then close it. This lets BepInEx create its folders.
+[*]Download the newest [url=https://github.com/lia-xim/WanderburgDamageStats/releases/latest]WanderburgDamageStats ZIP[/url] and extract it.
+[*]Copy [code]WanderburgDamageStats.dll[/code] into [code]Wanderburg Game\BepInEx\plugins\[/code].
+[*]Start Wanderburg normally through Steam.
+[/olist]
+
+If you do not know where Wanderburg is installed, right-click the game in your Steam Library and choose [b]Manage → Browse local files[/b].
+
+The overlay should appear in the upper-left corner after starting a run. Press [b]F8[/b] to hide or show it.
+
+[b]Please launch the game through Steam.[/b] Starting Wanderburg.exe directly did not initialize Steamworks correctly in my test, which caused Steam statistics and leaderboards to stop updating for that run.
+

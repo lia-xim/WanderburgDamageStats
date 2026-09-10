@@ -86,21 +86,27 @@ public sealed class DamageOverlay : MonoBehaviour
                     var c=activeChoices[i];
                     string moduleId=ResolveModuleId(c,modules);
                     float? share=ResolveChannelShare(moduleId,c.Kind,scoreFromRecent,scoreAll);
-                    bool special=c.Kind=="Special";
-                    ranked.Add(new(c,i+1,BuildCoachCore.Assess(c.RawLines,share,special),share));
+                    ranked.Add(new(c,i+1,BuildCoachCore.Assess(c.RawLines,share,c.HasSpecialEffect),share));
                 }
-                var calculable=ranked.Where(r=>r.Assessment.UpgradeStrength>0 && !r.Assessment.HasUnmodelledEffect)
+                var calculable=ranked.Where(r=>r.Assessment.IsNumericallyComparable)
                     .OrderByDescending(r=>r.Assessment.EstimatedBuildGain ?? r.Assessment.UpgradeStrength).ToArray();
                 var winner=calculable.FirstOrDefault();
                 bool hasSpecial=ranked.Any(r=>r.Assessment.HasUnmodelledEffect);
                 content.Append("<color=#F3C879><b>UPGRADE RECOMMENDATION</b></color>");
                 if(winner!=null)
                 {
-                    content.Append($"\n<color=#8FE3A1><b>→ {(hasSpecial?"NUMBERS PICK":"BEST PICK")}: CARD {winner.Card}</b></color>");
+                    content.Append($"\n<color=#8FE3A1><b>→ {(winner.Assessment.HasUnmodelledEffect?"NUMBERS PICK":"BEST PICK")}: CARD {winner.Card}</b></color>");
                     content.Append($"\n{Clean(winner.Choice.Name)} · {winner.Choice.Kind}");
                     content.Append(winner.Assessment.EstimatedBuildGain.HasValue
                         ?$"\n<color=#8FE3A1>≈ +{Percent(winner.Assessment.EstimatedBuildGain.Value)} Build-Output</color>"
                         :$"\n<color=#8FE3A1>+{Percent(winner.Assessment.UpgradeStrength)} card effect</color>");
+                    if(recentAll>0)
+                    {
+                        float currentDps=recentAll/observedSeconds;
+                        float? projectedDps=winner.Assessment.ProjectedDps(currentDps);
+                        if(projectedDps.HasValue)
+                            content.Append($"\n<color=#8FE3A1>Projected total: ≈ {Number(projectedDps.Value)} DPS</color> <size=75%>(now {Number(currentDps)})</size>");
+                    }
                     content.Append($"\n<size=82%>{winner.Assessment.MainReason}");
                     if(winner.ChannelShare.HasValue) content.Append($" · affects {Percent(winner.ChannelShare.Value)} of your damage");
                     content.Append("</size>");
@@ -110,7 +116,11 @@ public sealed class DamageOverlay : MonoBehaviour
                 content.Append("\n\n<size=85%><b>RANKING</b>");
                 foreach(var item in ranked.OrderByDescending(r=>r.Assessment.HasUnmodelledEffect?float.MinValue:r.Assessment.EstimatedBuildGain??r.Assessment.UpgradeStrength))
                 {
-                    string value=item.Assessment.HasUnmodelledEffect?"situational":item.Assessment.EstimatedBuildGain.HasValue?"≈ +"+Percent(item.Assessment.EstimatedBuildGain.Value):"+"+Percent(item.Assessment.UpgradeStrength);
+                    string value=item.Assessment.UpgradeStrength<=0 && item.Assessment.HasUnmodelledEffect
+                        ?"situational"
+                        :item.Assessment.EstimatedBuildGain.HasValue
+                            ?"≈ +"+Percent(item.Assessment.EstimatedBuildGain.Value)+(item.Assessment.HasUnmodelledEffect?" (numbers)":"")
+                            :"+"+Percent(item.Assessment.UpgradeStrength);
                     content.Append($"\nCard {item.Card}: {Clean(item.Choice.Name)} · {value}");
                 }
                 if(hasSpecial) content.Append("\nCheck special cards for effects beyond the numbers.");

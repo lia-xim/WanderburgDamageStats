@@ -1,0 +1,10 @@
+Wanderburg does not currently provide an official mod SDK or Workshop integration, so this is a code mod rather than a normal Steam Workshop item.
+
+The game is built with Unity IL2CPP. I used BepInEx to load a small C# plugin and inspected the game's generated IL2CPP types to find the existing run statistics and upgrade-card UI.
+
+The plugin reads the game's [code]StatisticsQuery.CurrentRun[/code] counters at short intervals. It calculates the change in total damage between samples, groups it by weapon, and turns that into a rolling 20-second DPS view.
+
+On the upgrade screen, it reads the text and numerical values already assigned to the three cards. It then estimates the result after each upgrade and combines that change with the affected weapon's current share of the build.
+
+The plugin does not change weapon damage, combat rules, save data, or Steam statistics. Its only Harmony patch observes the upgrade-card UI so it knows which choices are currently visible.
+

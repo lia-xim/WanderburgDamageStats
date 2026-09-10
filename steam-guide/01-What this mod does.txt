@@ -1,0 +1,19 @@
+Wanderburg Damage Stats is a small experiment I made because I wanted more useful information when choosing upgrades.
+
+During a run, it shows:
+
+[list]
+[*]actual damage per second over the last 20 seconds
+[*]each mounted weapon's share of that damage
+[*]a comparison of the three cards on the upgrade screen
+[*]an estimated recommendation for normal numerical upgrades
+[/list]
+
+The recommendation uses your current run as its starting point and estimates how each card could affect the whole build. If one weapon is doing most of your damage, an upgrade for that weapon usually receives more weight.
+
+Special and legendary effects are harder to compare reliably. The mod marks those as situational when it cannot model the full effect.
+
+[b]This is an early alpha for Wanderburg EA 0.9.8 on Windows.[/b]
+
+[url=https://github.com/lia-xim/WanderburgDamageStats/releases/latest]Download the latest Wanderburg Damage Stats release on GitHub[/url]
+

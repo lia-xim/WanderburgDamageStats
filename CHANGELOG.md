@@ -1,5 +1,12 @@
 # Wanderburg Damage Stats – Changelog
 
+## 0.2.2 - 2026-09-10
+
+- Keeps numerical legendary and special cards in the ranking instead of discarding them as purely situational.
+- Detects whether a special card affects the auto, active, or cooldown channel from the visible card UI.
+- Shows the estimated total DPS after the recommended upgrade alongside the current DPS.
+- Adds individually copyable Steam Guide sections under `steam-guide/`.
+
 ## 0.2.1 - 2026-09-10
 
 - Changes the complete in-game overlay and configuration descriptions to English.

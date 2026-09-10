@@ -10,7 +10,7 @@ using Object = UnityEngine.Object;
 
 namespace WanderburgDamageHUD;
 
-[BepInPlugin("io.github.lia-xim.wanderburg-damage-stats", "Wanderburg Damage Stats", "0.2.1")]
+[BepInPlugin("io.github.lia-xim.wanderburg-damage-stats", "Wanderburg Damage Stats", "0.2.2")]
 public sealed class Plugin : BasePlugin
 {
     internal static ManualLogSource Logger = null!;
@@ -39,7 +39,7 @@ internal sealed record WeaponStats(float Active, float Auto, float ActiveCooldow
         m.currentActiveAbilityCooldown, m.currentAutoAttackCooldown, m.activeAmmo, m.passiveAmmo);
 }
 
-internal sealed record ChoiceData(ModuleUpgradeOption Option, string Name, string ModuleId, string Kind, string Title, int Rarity, string[] RawLines, string[] Lines);
+internal sealed record ChoiceData(ModuleUpgradeOption Option, string Name, string ModuleId, string Kind, string Title, int Rarity, bool HasSpecialEffect, string[] RawLines, string[] Lines);
 
 [HarmonyPatch(typeof(ModuleUpgradeOption), nameof(ModuleUpgradeOption.SetButton))]
 internal static class ChoicePatch
@@ -56,7 +56,16 @@ internal static class ChoicePatch
                     foreach (var line in System.Text.RegularExpressions.Regex.Split(collection[i] ?? "", @"<br\s*/?>|\r?\n"))
                         if (line.Contains("<s>") && line.Contains("<b>")) rawLines.Add(line);
             }
+            bool hasSpecialEffect=upgradeType is ModuleUpgrade.UpgradeType.legendary or ModuleUpgrade.UpgradeType.special;
             string kind = upgradeType switch { ModuleUpgrade.UpgradeType.passive => "Auto", ModuleUpgrade.UpgradeType.ultimate => "Active", ModuleUpgrade.UpgradeType.cooldown => "Cooldown", _ => "Special" };
+            // Legendary and special cards can still target a normal damage channel.
+            // The card UI exposes that channel more accurately than the broad upgrade enum.
+            if(hasSpecialEffect)
+            {
+                if(__instance.autoElements && __instance.autoElements.activeInHierarchy) kind="Auto";
+                else if(__instance.abilityElements && __instance.abilityElements.activeInHierarchy) kind="Active";
+                else if(__instance.cooldownElements && __instance.cooldownElements.activeInHierarchy) kind="Cooldown";
+            }
             string moduleId = "";
             var gm = GM.gm;
             if (gm && gm.ms)
@@ -70,7 +79,7 @@ internal static class ChoicePatch
             }
             var distinctRaw = rawLines.Distinct().ToArray();
             var lines = distinctRaw.Select(PreviewText.Format).ToArray();
-            DamageOverlay.Choices[__instance.GetInstanceID()] = new(__instance, moduleNameString, moduleId, kind, upgradeTitleString, rarity, distinctRaw, lines);
+            DamageOverlay.Choices[__instance.GetInstanceID()] = new(__instance, moduleNameString, moduleId, kind, upgradeTitleString, rarity, hasSpecialEffect, distinctRaw, lines);
             Plugin.Logger.LogInfo($"Coach offer {moduleNameString}/{moduleId}: " + string.Join(" | ", lines));
         }
         catch (Exception ex) { Plugin.Logger.LogWarning($"Upgrade preview unavailable: {ex.Message}"); }

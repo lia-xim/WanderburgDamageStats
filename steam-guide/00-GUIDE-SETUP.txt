@@ -1,0 +1,19 @@
+GUIDE TITLE
+Wanderburg Damage Stats – Live DPS and Upgrade Recommendations
+
+SHORT DESCRIPTION
+A small unofficial mod that shows which weapons are carrying your run and helps compare numerical upgrade choices.
+
+LANGUAGE
+English
+
+SUGGESTED CATEGORIES
+Modding or Configuration
+Gameplay Basics
+
+SECTION ORDER
+1. What this mod does
+2. Installation
+3. How it was made
+4. Limits and removal
+

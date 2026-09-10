@@ -34,4 +34,14 @@ var special=BuildCoachCore.Assess(Array.Empty<string>(),.8f,true);
 if(!special.HasUnmodelledEffect || special.EstimatedBuildGain.GetValueOrDefault()!=0)
     throw new Exception($"Special assessment must remain unmodelled: {special}");
 
-Console.WriteLine("PASS: 4 Damage Stats recommendation cases (damage share, cooldown benefit, charge weighting, unmodelled special).");
+var numericLegendary=BuildCoachCore.Assess(new[]{
+    "<s>1</s><sprite name=\"TestArrow\"><b>71</b> FLAT DAMAGE! <s>4</s><sprite name=\"TestArrow\"><b>5</b> DAMAGE MULT",
+    "<s>0</s><sprite name=\"TestArrow\"><b>30</b> DAMAGE MULT"
+},.676f,true);
+if(!numericLegendary.HasUnmodelledEffect || !numericLegendary.IsNumericallyComparable || numericLegendary.EstimatedBuildGain.GetValueOrDefault()<4.8f)
+    throw new Exception($"Numeric legendary must remain rankable: {numericLegendary}");
+var projected=numericLegendary.ProjectedDps(36.46f);
+if(!projected.HasValue || projected.Value<210f)
+    throw new Exception($"Projected DPS missing for numeric legendary: {projected}");
+
+Console.WriteLine("PASS: 5 Damage Stats recommendation cases (damage share, cooldown benefit, charge weighting, unmodelled special, numeric legendary projection).");
