@@ -100,7 +100,7 @@ public sealed class DamageOverlay : MonoBehaviour
                 content.Append("<color=#F3C879><b>UPGRADE RECOMMENDATION</b></color>");
                 if(winner!=null)
                 {
-                    content.Append($"\n<color=#8FE3A1><b>→ {(winner.Assessment.HasUnmodelledEffect || ranked.Any(r=>r.Assessment.HasUnmodelledEffect)?"DAMAGE PICK":"BEST PICK")}: CARD {winner.Card}</b></color>");
+                    content.Append($"\n<color=#8FE3A1><b>→ OVERALL PICK: CARD {winner.Card}</b></color>");
                     content.Append($"\n{Clean(winner.Choice.Name)} · {winner.Choice.Kind}");
                     content.Append(winner.Assessment.EstimatedBuildGain.HasValue
                         ?$"\n<color=#8FE3A1>≈ +{Percent(winner.Assessment.EstimatedBuildGain.Value)} Build-Output</color>"
@@ -129,7 +129,7 @@ public sealed class DamageOverlay : MonoBehaviour
                     string value=item.Assessment.UpgradeStrength<=0 && item.Assessment.HasUnmodelledEffect
                         ?"situational"
                         :item.Assessment.EstimatedBuildGain.HasValue
-                            ?"≈ +"+Percent(item.Assessment.EstimatedBuildGain.Value)+(item.Assessment.HasUnmodelledEffect?" (damage model)":"")
+                            ?"≈ +"+Percent(item.Assessment.EstimatedBuildGain.Value)+(item.Assessment.HasUnmodelledEffect?" (conditional)":"")
                             :"+"+Percent(item.Assessment.UpgradeStrength);
                     content.Append($"\nCard {item.Card}: {Clean(item.Choice.Name)} · {value}");
                 }

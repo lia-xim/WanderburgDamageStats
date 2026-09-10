@@ -6,6 +6,7 @@
 - Models damage, cooldown, charges, duration, size, and projectile speed together instead of scoring isolated card text.
 - Calibrates the projected channel change against the damage distribution observed in the current run.
 - Includes a driver breakdown and confidence label for manual or conditional effects.
+- Presents the highest expected modeled outcome as the overall pick while keeping uncertainty visible in its explanation.
 
 ## 0.2.4 - 2026-09-10
 
