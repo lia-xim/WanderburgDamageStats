@@ -3,5 +3,8 @@
   <ItemGroup>
     <Compile Include="../src/PreviewText.cs" Link="PreviewText.cs" />
     <Compile Include="../src/BuildCoachCore.cs" Link="BuildCoachCore.cs" />
+    <Compile Include="../src/PredictionModel.cs" Link="PredictionModel.cs" />
+    <Compile Include="../src/NativeStatMath.cs" Link="NativeStatMath.cs" />
+    <Compile Include="../src/FutureSearch.cs" Link="FutureSearch.cs" />
   </ItemGroup>
 </Project>

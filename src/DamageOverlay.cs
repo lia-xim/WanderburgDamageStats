@@ -7,7 +7,7 @@ using Object=UnityEngine.Object;
 
 namespace WanderburgDamageHUD;
 
-internal sealed record RankedChoice(ChoiceData Choice, int Card, UpgradeAssessment Assessment, float? ChannelShare);
+internal sealed record RankedChoice(ChoiceData Choice, int Card, Prediction Assessment);
 
 public sealed class DamageOverlay : MonoBehaviour
 {
@@ -16,10 +16,9 @@ public sealed class DamageOverlay : MonoBehaviour
     private float errorAt;
     private string lastInventory="";
     private float lastGameTime=-1;
+    private bool details;
     private readonly HashSet<string> loggedPreviews=new();
-    private GameObject canvasObject;
-    private RectTransform panel;
-    private TextMeshProUGUI text;
+    private HudView hud;
     public DamageOverlay(IntPtr pointer) : base(pointer) { }
 
     public void Update()
@@ -27,29 +26,31 @@ public sealed class DamageOverlay : MonoBehaviour
         try
         {
             if(Keyboard.current!=null && Keyboard.current.f8Key.wasPressedThisFrame) Plugin.Enabled.Value=!Plugin.Enabled.Value;
+            if(Keyboard.current!=null && Keyboard.current.f9Key.wasPressedThisFrame) details=!details;
+            if(Keyboard.current!=null && Keyboard.current.f7Key.wasPressedThisFrame) ToggleCoach();
+            RuntimeFuture.Pump();
             if(Time.unscaledTime<refreshAt) return;
             refreshAt=Time.unscaledTime+.25f;
             var gm=GM.gm;
+            CatalogSnapshot.TryExport(gm);
             bool inRun=gm && gm.vm && !gm.mainMenuOpen;
-            if(!inRun || !Plugin.Enabled.Value)
+            if(!inRun)
             {
-                if(canvasObject) canvasObject.SetActive(false);
+                hud?.Hide();
                 if(!gm || !gm.vm) Choices.Clear();
                 return;
             }
-            if(lastGameTime>=0 && gm.gameTime+1f<lastGameTime) CombatTelemetry.Reset();
+            if(lastGameTime>=0 && gm.gameTime+1f<lastGameTime) {CombatTelemetry.Reset();RuntimeFuture.Reset();}
             lastGameTime=gm.gameTime;
             CombatTelemetry.RefreshFromGame();
+            RuntimeModel.Observe(gm);
+            if(!Plugin.Enabled.Value) { hud?.Hide(); return; }
             var modules=gm.vm.allModules2;
             if(modules==null) return;
-            var rows=new List<string>();
+            var rows=new List<HudWeapon>();
             var inventory=new List<string>();
             var recentTotal=CombatTelemetry.RecentTotal();
             float recentAll=recentTotal.Active+recentTotal.Auto+recentTotal.Unknown;
-            var cumulativeTotal=CombatTelemetry.CumulativeTotal();
-            float cumulativeAll=cumulativeTotal.Active+cumulativeTotal.Auto+cumulativeTotal.Unknown;
-            bool scoreFromRecent=recentAll>0.01f;
-            float scoreAll=scoreFromRecent?recentAll:cumulativeAll;
             float observedSeconds=CombatTelemetry.HasStarted?Mathf.Clamp(Time.time-CombatTelemetry.StartedAt,1f,20f):1f;
             for(int i=0;i<modules.Count;i++)
             {
@@ -61,7 +62,7 @@ public sealed class DamageOverlay : MonoBehaviour
                 var recent=CombatTelemetry.Recent(m.moduleID);
                 float dealt=recent.Active+recent.Auto+recent.Unknown;
                 float share=recentAll>0?dealt/recentAll:0f;
-                rows.Add($"<b>{name}</b>\n{Percent(share)} share  ·  {Number(dealt/observedSeconds)} DPS");
+                rows.Add(new(name,share,dealt/observedSeconds));
                 inventory.Add($"{name}:{stats.Active:0.##}/{stats.Auto:0.##}");
             }
             string currentInventory=string.Join("|",inventory);
@@ -71,91 +72,102 @@ public sealed class DamageOverlay : MonoBehaviour
                 Plugin.Logger.LogInfo("HUD inventory: "+currentInventory);
             }
             EnsureUI();
-            if(!canvasObject) return;
+            if(hud==null) return;
             var activeChoices=Choices.Values.Where(c=>c.Option && c.Option.gameObject.activeInHierarchy && c.Option.HasConfiguredOption)
                 .OrderBy(c=>c.Option.transform.position.x).Take(3).ToArray();
             bool showingUpgrade=gm.upgradeMenuOpen || activeChoices.Length>0;
-            var content=new System.Text.StringBuilder("<color=#F3C879><b>DAMAGE STATS</b></color> <size=58%><color=#9A9A9A>v0.3.1</color></size>\n");
-            content.Append(recentAll>0
-               ?$"<size=85%>Last 20 s: {Number(recentAll/observedSeconds)} DPS · F8</size>\n\n"
-                :"<size=85%>Waiting for combat damage · F8</size>\n\n");
-            if(showingUpgrade && activeChoices.Length>0)
+            var content=new System.Text.StringBuilder();
+            if(Plugin.FutureEnabled.Value && showingUpgrade && activeChoices.Length>0)
             {
                 var ranked=new List<RankedChoice>();
                 for(int i=0;i<activeChoices.Length;i++)
                 {
                     var c=activeChoices[i];
                     string moduleId=ResolveModuleId(c,modules);
-                    float? share=ResolveChannelShare(moduleId,c.Kind,c.RawLines,scoreFromRecent,scoreAll);
                     var currentModule=ResolveModule(moduleId,modules);
-                    var previewModule=ResolvePreviewModule(c,gm.ms);
-                    var assessment=currentModule && previewModule
-                        ?BuildCoachCore.AssessProjected(WeaponStats.Read(currentModule).Profile,WeaponStats.Read(previewModule).Profile,c.Kind,c.RawLines,share,c.HasSpecialEffect)
-                        :BuildCoachCore.Assess(c.RawLines,share,c.HasSpecialEffect);
-                    string previewKey=$"{c.Option.GetInstanceID()}:{c.Index}:{c.Title}";
+                    ModelProfile projected=null;
+                    Prediction assessment;
+                    try
+                    {
+                        projected=RuntimeProjection.Project(currentModule,c,gm.ms);
+                        assessment=RuntimeModel.Assess(currentModule,projected,moduleId,observedSeconds);
+                    }
+                    catch(Exception ex) { assessment=Prediction.Unavailable("Card projection unavailable: "+ex.Message); }
+                    // Keep behavior-only cards visible even when generic numeric fields do not change.
+                    if(c.HasSpecialEffect)
+                        assessment=assessment with { Unknowns=assessment.Unknowns.Append("special behavior / future synergies not fully modeled").Distinct().ToArray() };
+                    string previewKey=$"{c.Option.GetInstanceID()}:{c.Index}:{c.Title}:{string.Join("|",c.RawLines)}";
                     if(loggedPreviews.Add(previewKey))
-                        Plugin.Logger.LogInfo($"Overall model card {i+1}: game preview={(previewModule?"yes":"no")}; {assessment.MainReason}");
-                    ranked.Add(new(c,i+1,assessment,share));
+                    {
+                        Plugin.Logger.LogInfo($"Model card {i+1}: rolled data={(projected!=null?"yes":"no")}; module={moduleId}; gain={assessment.Gain}; {assessment.Reason}; unknown={string.Join("; ",assessment.Unknowns)}");
+                        if(currentModule && projected!=null)
+                            Plugin.Logger.LogInfo($"Model inputs card {i+1}: before={RuntimeModel.Describe(currentModule)}; after={RuntimeModel.Describe(projected,moduleId)}");
+                    }
+                    ranked.Add(new(c,i+1,assessment));
                 }
-                var calculable=ranked.Where(r=>r.Assessment.IsNumericallyComparable)
-                    .OrderByDescending(r=>r.Assessment.EstimatedBuildGain ?? r.Assessment.UpgradeStrength).ToArray();
-                var winner=calculable.FirstOrDefault();
-                bool hasSpecial=ranked.Any(r=>r.Assessment.HasUnmodelledEffect);
-                content.Append("<color=#F3C879><b>UPGRADE RECOMMENDATION</b></color>");
+                // The same order drives both the lead card and the visible list.
+                var ordered=ranked.OrderByDescending(r=>r.Assessment.CanRank)
+                    .ThenByDescending(r=>r.Assessment.Gain ?? float.NegativeInfinity).ToArray();
+                var winner=ordered.FirstOrDefault(r=>r.Assessment.CanRank && r.Assessment.Gain>0);
+                bool complete=ranked.All(r=>r.Assessment.Complete);
+                RuntimeFuture.Ensure(activeChoices,observedSeconds);
+                var future=RuntimeFuture.Results.OrderByDescending(r=>r.Mean).ThenByDescending(r=>r.WinShare).ToArray();
+                bool futureReady=Plugin.FutureEnabled.Value && RuntimeFuture.Samples>=16 && future.Length>=2;
+                if(Plugin.FutureEnabled.Value)
+                {
+                    content.Append("<color=#F3C879><b>BUILD OUTLOOK</b></color>\n");
+                    if(futureReady)
+                    {
+                        var best=future[0];
+                        var chosen=ranked.First(r=>r.Card.ToString()==best.Id);
+                        var missing=ranked.Where(r=>!future.Any(f=>f.Id==r.Card.ToString())).ToArray();
+                        bool tied=Math.Abs(best.Mean-future[1].Mean)<.005;
+                        if(missing.Length>0) content.Append("<color=#F3C879><b>PARTIAL COMPARISON</b></color>\n");
+                        content.Append(tied?"<b>No clear lead yet</b>":missing.Length>0?$"<b>Modeled lead: Card {best.Id}</b>":$"<color=#8FE3A1><b>PLANNED PICK: CARD {best.Id}</b></color>");
+                        content.Append($"\n{Clean(chosen.Choice.Name)} · {chosen.Choice.Kind}");
+                        content.Append($"\n<size=85%>Top in {Percent((float)best.WinShare)} of simulations\nNext {RuntimeFuture.Depth} normal upgrades · {RuntimeFuture.Samples} paths/card{(RuntimeFuture.Done?"":" · calculating")}</size>");
+                        content.Append("\n\n<size=85%><b>NOW → AFTER UPGRADES</b>");
+                        foreach(var f in future)
+                        {
+                            var c=ranked.First(r=>r.Card.ToString()==f.Id);
+                            content.Append($"\nCard {f.Id}: {Signed(c.Assessment.Gain ?? 0)} → {Signed((float)f.EndMean)}");
+                        }
+                        foreach(var c in missing) content.Append($"\n<color=#F3C879>Card {c.Card}: {Clean(c.Choice.Name)} · not modeled</color>");
+                        content.Append("\nGains vs your current build. Pick balances damage now and later.</size>");
+                        content.Append($"\n<color=#F3C879><size=80%>Estimated damage paths, not win odds. Same combat behavior; {(RuntimeFuture.Omitted>0?"some future effects excluded":"normal module upgrades only")}.{(RuntimeFuture.SupportedRoots<ranked.Count?" Some current cards not compared.":"")}</size></color>\n<size=80%>F9: model details</size>\n\n");
+                    }
+                    else
+                    {
+                        content.Append(RuntimeFuture.Error.Length>0?"<size=80%>Future comparison unavailable for this offer.</size>\n\n":$"<size=85%>Simulating the next {Plugin.FutureDepth.Value} upgrades…</size>\n\n");
+                    }
+                }
+                if(!futureReady || details)
+                {
+                content.Append("<color=#F3C879><b>UPGRADE COMPARISON</b></color>");
                 if(winner!=null)
                 {
-                    content.Append($"\n<color=#8FE3A1><b>→ OVERALL PICK: CARD {winner.Card}</b></color>");
+                    content.Append($"\n<color=#8FE3A1><b>{(complete?"DAMAGE PICK":"TENTATIVE DAMAGE PICK")}: CARD {winner.Card}</b></color>");
                     content.Append($"\n{Clean(winner.Choice.Name)} · {winner.Choice.Kind}");
-                    content.Append(winner.Assessment.EstimatedBuildGain.HasValue
-                        ?$"\n<color=#8FE3A1>≈ +{Percent(winner.Assessment.EstimatedBuildGain.Value)} Build-Output</color>"
-                        :$"\n<color=#8FE3A1>+{Percent(winner.Assessment.UpgradeStrength)} card effect</color>");
-                    if(recentAll>0)
-                    {
-                        float currentDps=recentAll/observedSeconds;
-                        float? projectedDps=winner.Assessment.ProjectedDps(currentDps);
-                        if(projectedDps.HasValue)
-                            content.Append($"\n<color=#8FE3A1>Projected total: ≈ {Number(projectedDps.Value)} DPS</color> <size=75%>(now {Number(currentDps)})</size>");
-                    }
-                    content.Append($"\n<size=82%>{winner.Assessment.MainReason}");
-                    if(winner.ChannelShare.HasValue) content.Append($" · affects {Percent(winner.ChannelShare.Value)} of your damage");
-                    content.Append("</size>");
-                    var higherRarityAlternative=ranked
-                        .Where(r=>r.Card!=winner.Card && r.Choice.Rarity>winner.Choice.Rarity && r.Assessment.HasUnmodelledEffect)
-                        .OrderByDescending(r=>r.Choice.Rarity).FirstOrDefault();
-                    if(higherRarityAlternative!=null)
-                        content.Append($"\n<color=#F3C879><size=82%>Card {higherRarityAlternative.Card} has higher-rarity utility outside the DPS model.</size></color>");
+                    content.Append($"\n<color=#8FE3A1>{Signed(winner.Assessment.Gain.Value)} modeled build DPS</color>");
+                    if(winner.Assessment.Low.HasValue && winner.Assessment.High.HasValue && winner.Assessment.High-winner.Assessment.Low>.005f)
+                        content.Append($"\n<size=80%>Sensitivity scenarios: {Signed(winner.Assessment.Low.Value)} to {Signed(winner.Assessment.High.Value)} (not bounds)</size>");
+                    if(details) content.Append($"\n<size=80%>{winner.Assessment.Reason}</size>");
                 }
-                else content.Append("\nNo reliable numerical recommendation yet.");
-
-                content.Append("\n\n<size=85%><b>RANKING</b>");
-                foreach(var item in ranked.OrderByDescending(r=>r.Assessment.HasUnmodelledEffect?float.MinValue:r.Assessment.EstimatedBuildGain??r.Assessment.UpgradeStrength))
+                else content.Append("\nNo reliable damage pick yet.");
+                if(!complete) content.Append("\n<color=#F3C879><size=80%>Overall winner uncertain: some effects or combat conditions are unresolved.</size></color>");
+                content.Append("\n\n<size=85%><b>CARD COMPARISON</b>");
+                foreach(var item in ordered)
                 {
-                    string value=item.Assessment.UpgradeStrength<=0 && item.Assessment.HasUnmodelledEffect
-                        ?"situational"
-                        :item.Assessment.EstimatedBuildGain.HasValue
-                            ?"≈ +"+Percent(item.Assessment.EstimatedBuildGain.Value)+(item.Assessment.HasUnmodelledEffect?" (conditional)":"")
-                            :"+"+Percent(item.Assessment.UpgradeStrength);
+                    string value=item.Assessment.CanRank?Signed(item.Assessment.Gain.Value):"not estimated";
                     content.Append($"\nCard {item.Card}: {Clean(item.Choice.Name)} · {value}");
+                    if(details && item.Assessment.Unknowns.Length>0)
+                        content.Append($"\n<size=85%>{string.Join("; ",item.Assessment.Unknowns.Take(2))}{(item.Assessment.Unknowns.Length>2?"; further uncertainties":"")}</size>");
                 }
-                if(hasSpecial) content.Append("\nCheck special cards for effects beyond the numbers.");
-                if(scoreAll<=0) content.Append("\nPreliminary: no damage data yet.");
                 content.Append("</size>\n\n");
+                if(!details) content.Append("<size=80%>F9: model details</size>\n\n");
+                }
             }
-            content.Append(rows.Count>0?string.Join("\n\n",rows):"No weapons mounted yet.");
-            canvasObject.SetActive(true);
-            text.text=content.ToString();
-            float factor=Mathf.Clamp(Screen.height/1080f,.5f,3f)*Mathf.Clamp(Plugin.Scale.Value,.7f,1.8f);
-            float width=Mathf.Min(216f*factor,Screen.width*.18f);
-            float x=Mathf.Clamp((showingUpgrade?16:Plugin.Left.Value)*factor,0,Screen.width-width);
-            float y=Mathf.Clamp(Plugin.Top.Value*factor,0,Screen.height-100);
-            panel.anchoredPosition=new Vector2(x,-y);
-            panel.sizeDelta=new Vector2(width,Screen.height-y-16);
-            text.fontSize=15f*factor;
-            text.fontSizeMax=15f*factor;
-            text.fontSizeMin=11f*factor;
-            // Preferred height uses the current width; bounded to the viewport for long inventories.
-            float preferred=text.GetPreferredValues(text.text,width-20*factor,10000).y+24*factor;
-            panel.sizeDelta=new Vector2(width,Mathf.Min(preferred,Screen.height-y-16));
+            hud.Render(rows.ToArray(),recentAll/observedSeconds,recentAll>0,showingUpgrade,content.ToString().Trim(),details);
         }
         catch(Exception ex)
         {
@@ -166,47 +178,26 @@ public sealed class DamageOverlay : MonoBehaviour
     [HideFromIl2Cpp]
     private void EnsureUI()
     {
-        if(canvasObject) return;
+        if(hud!=null) return;
         var fonts=Resources.FindObjectsOfTypeAll<TMP_FontAsset>();
         TMP_FontAsset font=null;
-        for(int i=0;i<fonts.Length;i++)
+        foreach(var candidate in fonts)
         {
-            if(!fonts[i]) continue;
-            if(font==null) font=fonts[i];
-            if(fonts[i].name.Contains("LiberationSans") || fonts[i].name.Contains("Roboto-Regular")) { font=fonts[i]; break; }
+            if(!candidate) continue;
+            if(font==null) font=candidate;
+            if(candidate.name.Contains("LiberationSans") || candidate.name.Contains("Roboto-Regular")) {font=candidate;break;}
         }
         if(!font) return;
-        canvasObject=new GameObject("WanderburgDamageHUD.Canvas");
-        Object.DontDestroyOnLoad(canvasObject);
-        var canvas=canvasObject.AddComponent<Canvas>();
-        canvas.renderMode=RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder=30000;
-        var panelObject=new GameObject("StatsPanel");
-        panel=panelObject.AddComponent<RectTransform>();
-        panel.SetParent(canvasObject.transform,false);
-        panel.anchorMin=new Vector2(0,1);
-        panel.anchorMax=new Vector2(0,1);
-        panel.pivot=new Vector2(0,1);
-        var background=panelObject.AddComponent<Image>();
-        background.color=new Color(.045f,.05f,.065f,.92f);
-        background.raycastTarget=false;
-        var textObject=new GameObject("StatsText");
-        var textRect=textObject.AddComponent<RectTransform>();
-        textRect.SetParent(panel,false);
-        textRect.anchorMin=Vector2.zero;
-        textRect.anchorMax=Vector2.one;
-        textRect.offsetMin=new Vector2(10,12);
-        textRect.offsetMax=new Vector2(-10,-12);
-        text=textObject.AddComponent<TextMeshProUGUI>();
-        text.font=font;
-        text.color=new Color(.95f,.95f,.93f);
-        text.richText=true;
-        text.enableWordWrapping=true;
-        text.enableAutoSizing=true;
-        text.alignment=TextAlignmentOptions.TopLeft;
-        text.overflowMode=TextOverflowModes.Truncate;
-        text.raycastTarget=false;
-        Plugin.Logger.LogInfo("Native UI created; font: "+font.name);
+        hud=new HudView(font,ToggleCoach,()=>{details=!details;refreshAt=0;});
+        Plugin.Logger.LogInfo("DPS-first HUD created; font: "+font.name);
+    }
+
+    [HideFromIl2Cpp]
+    private void ToggleCoach()
+    {
+        Plugin.FutureEnabled.Value=!Plugin.FutureEnabled.Value;
+        RuntimeFuture.Reset();refreshAt=0;
+        Plugin.Logger.LogInfo("Upgrade coach "+(Plugin.FutureEnabled.Value?"enabled":"disabled"));
     }
 
     [HideFromIl2Cpp]
@@ -231,37 +222,18 @@ public sealed class DamageOverlay : MonoBehaviour
     [HideFromIl2Cpp]
     private static Module2 ResolveModule(string moduleId,Il2CppSystem.Collections.Generic.List<Module2> modules)
     {
+        Module2 found=null;
         if(string.IsNullOrWhiteSpace(moduleId)) return null;
         for(int i=0;i<modules.Count;i++)
         {
             var module=modules[i];
-            if(module && string.Equals(module.moduleID,moduleId,StringComparison.OrdinalIgnoreCase)) return module;
+            if(module && module.IsInstalled && module.IsMountedOnVehicle(GM.gm.vm) && string.Equals(module.moduleID,moduleId,StringComparison.OrdinalIgnoreCase))
+            { if(found) return null; found=module; }
         }
-        return null;
+        return found;
     }
 
     [HideFromIl2Cpp]
-    private static Module2 ResolvePreviewModule(ChoiceData choice,ModuleSelection selection)
-    {
-        try
-        {
-            var previews=selection?.generatedModuleUpgradePreviewObjects;
-            if(previews==null || choice.Index<0 || choice.Index>=previews.Count) return null;
-            var preview=previews[choice.Index];
-            return preview ? preview.GetComponentInChildren<Module2>(true) : null;
-        }
-        catch(Exception ex)
-        {
-            Plugin.Logger.LogDebug($"Preview stats unavailable for card {choice.Index+1}: {ex.Message}");
-            return null;
-        }
-    }
+    private static string Signed(float value) => (value>0?"+":"")+Percent(value);
 
-    [HideFromIl2Cpp]
-    private static float? ResolveChannelShare(string moduleId,string kind,string[] rawLines,bool recent,float total)
-    {
-        if(total<=0 || string.IsNullOrWhiteSpace(moduleId)) return null;
-        var value=recent?CombatTelemetry.Recent(moduleId):CombatTelemetry.Cumulative(moduleId);
-        return BuildCoachCore.ResolveAffectedShare(kind,rawLines,value.Active,value.Auto,value.Unknown,total);
-    }
 }

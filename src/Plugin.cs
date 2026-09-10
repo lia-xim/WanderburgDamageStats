@@ -10,14 +10,18 @@ using Object = UnityEngine.Object;
 
 namespace WanderburgDamageHUD;
 
-[BepInPlugin("io.github.lia-xim.wanderburg-damage-stats", "Wanderburg Damage Stats", "0.3.1")]
+[BepInPlugin("io.github.lia-xim.wanderburg-damage-stats", "Wanderburg Damage Stats", Plugin.ModVersion)]
 public sealed class Plugin : BasePlugin
 {
+    public const string ModVersion="0.6.0";
     internal static ManualLogSource Logger = null!;
     internal static ConfigEntry<bool> Enabled = null!;
     internal static ConfigEntry<float> Scale = null!;
     internal static ConfigEntry<float> Left = null!;
     internal static ConfigEntry<float> Top = null!;
+    internal static ConfigEntry<bool> ExportCatalog = null!;
+    internal static ConfigEntry<bool> FutureEnabled = null!;
+    internal static ConfigEntry<int> FutureDepth = null!;
     public override void Load()
     {
         Logger = Log;
@@ -25,9 +29,12 @@ public sealed class Plugin : BasePlugin
         Scale = Config.Bind("Display", "Scale", 1f, "Additional UI scale multiplier (0.7 to 1.8).");
         Left = Config.Bind("Display", "Left", 70f, "Distance from the left edge during a run; the upgrade screen uses its own margin.");
         Top = Config.Bind("Display", "Top", 100f, "Distance from the top edge in scaled pixels.");
+        ExportCatalog = Config.Bind("Diagnostics", "ExportCatalogOnce", false, "Export loaded game assets locally for model investigation; resets after success.");
+        FutureEnabled = Config.Bind("Planning", "Enabled", true, "F7 or the HUD button toggles all upgrade recommendations. DPS tracking stays enabled.");
+        FutureDepth = Config.Bind("Planning", "FutureUpgrades", 5, new ConfigDescription("Number of future normal module upgrade decisions to simulate. More depth increases cost and uncertainty.",new AcceptableValueRange<int>(1,8)));
         new Harmony("io.github.lia-xim.wanderburg-damage-stats").PatchAll();
         AddComponent<DamageOverlay>();
-        Log.LogInfo("Damage Stats loaded. F8 toggles display. Damage telemetry is polled read-only; no gameplay/statistics methods are patched.");
+        Log.LogInfo("Damage Stats loaded. F8 toggles display. Read-only counters and activation event observers; no combat/statistics methods patched.");
     }
 }
 
@@ -40,7 +47,7 @@ internal sealed record WeaponStats(float Active, float Auto, float ActiveCooldow
         m.activeAbilityDuration, m.passiveAbilityDuration, m.activeAbilityCurrentSize, m.autoAttackCurrentSize,
         m.activeAbilityCurrentSpeed, m.autoAttackCurrentSpeed);
 
-    internal WeaponProfile Profile => new(Active,Auto,ActiveCooldown,AutoCooldown,ActiveAmmo,AutoAmmo,ActiveDuration,AutoDuration,ActiveSize,AutoSize,ActiveSpeed,AutoSpeed);
+
 }
 
 internal sealed record ChoiceData(ModuleUpgradeOption Option, int Index, string Name, string ModuleId, string Kind, string Title, int Rarity, bool HasSpecialEffect, string[] RawLines, string[] Lines);
@@ -58,7 +65,7 @@ internal static class ChoicePatch
                 if (collection == null) continue;
                 for (int i=0;i<collection.Count;i++)
                     foreach (var line in System.Text.RegularExpressions.Regex.Split(collection[i] ?? "", @"<br\s*/?>|\r?\n"))
-                        if (line.Contains("<s>") && line.Contains("<b>")) rawLines.Add(line);
+                        if (!string.IsNullOrWhiteSpace(line)) rawLines.Add(line);
             }
             bool hasSpecialEffect=upgradeType is ModuleUpgrade.UpgradeType.legendary or ModuleUpgrade.UpgradeType.special;
             string kind = upgradeType switch { ModuleUpgrade.UpgradeType.passive => "Auto", ModuleUpgrade.UpgradeType.ultimate => "Active", ModuleUpgrade.UpgradeType.cooldown => "Cooldown", _ => "Special" };
@@ -94,5 +101,10 @@ internal static class ChoicePatch
 [HarmonyPatch(typeof(ModuleUpgradeOption), nameof(ModuleUpgradeOption.PrepareForSelectionGeneration))]
 internal static class ResetChoicePatch
 {
-    static void Postfix(ModuleUpgradeOption __instance) => DamageOverlay.Choices.Remove(__instance.GetInstanceID());
+    static void Postfix(ModuleUpgradeOption __instance)
+    {
+        DamageOverlay.Choices.Remove(__instance.GetInstanceID());
+        RuntimeFuture.NewMenu();
+        RuntimeFuture.Reset();
+    }
 }

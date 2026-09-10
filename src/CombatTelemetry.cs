@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace WanderburgDamageHUD;
 
@@ -47,13 +47,16 @@ internal static class CombatTelemetry
 {
     private static readonly Dictionary<string, DamageWindow> Modules = new(StringComparer.OrdinalIgnoreCase);
     private static readonly Dictionary<string, float> LastTotals = new(StringComparer.OrdinalIgnoreCase);
+    private static bool initialized;
     internal static float StartedAt { get; private set; }
     internal static bool HasStarted { get; private set; }
 
     internal static void Reset()
     {
+        RuntimeModel.Reset();
         Modules.Clear();
         LastTotals.Clear();
+        initialized=false;
         StartedAt = Time.time;
         HasStarted = false;
         Plugin.Logger.LogInfo("Damage Stats telemetry reset for new run.");
@@ -72,7 +75,8 @@ internal static class CombatTelemetry
             if (!LastTotals.TryGetValue(rawId, out var previous))
             {
                 LastTotals[rawId] = current;
-                continue;
+                if(!initialized) continue;
+                previous=0;
             }
             LastTotals[rawId] = current;
             if (current < previous) continue;
@@ -87,6 +91,7 @@ internal static class CombatTelemetry
             if (!Modules.TryGetValue(baseId, out var window)) Modules[baseId] = window = new DamageWindow();
             window.Add(channel, delta, Mathf.FloorToInt(Time.time));
         }
+        initialized=true;
     }
 
     private static (string BaseId, ModuleDamageChannel Channel) Decode(string moduleId)

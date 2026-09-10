@@ -10,7 +10,7 @@ This is an early alpha for Wanderburg EA 0.9.8 on Windows. It is an unofficial c
 
 If you already have BepInEx installed for Wanderburg, you only need to copy one file:
 
-1. Download the newest `WanderburgDamageStats` ZIP from the [GitHub Releases page](https://github.com/lia-xim/WanderburgDamageStats/releases/latest).
+1. Download the newest `WanderburgDamageStats` ZIP from the [GitHub Releases page](https://github.com/lia-xim/WanderburgDamageStats/releases).
 2. Extract the ZIP.
 3. Copy this file:
 
@@ -26,7 +26,7 @@ If you already have BepInEx installed for Wanderburg, you only need to copy one 
 
 5. Start Wanderburg normally through Steam.
 
-That’s it. **DAMAGE STATS** should appear in the upper-left corner during a run. Press **F8** at any time to hide or show it.
+That’s it. **DAMAGE STATS** should appear in the upper-left corner during a run. **F7** toggles the upgrade coach; **F8** hides or shows the whole HUD. You can also click the coach button below the damage bars.
 
 Installed Wanderburg in another Steam library? Open your Steam **Library**, right-click Wanderburg, and select **Manage → Browse local files**. The folder that opens is the correct game folder. From there, open `BepInEx\plugins` and paste the DLL inside.
 
@@ -42,10 +42,22 @@ A shorter copy guide is also included in the release ZIP as `INSTALLATION.txt`.
 
 ## What you will see in the game
 
-- During a run: actual damage per second over the last 20 seconds and each weapon’s share of that damage.
+- A large total-DPS readout, followed by damage bars and DPS for each weapon. These stay above the optional upgrade coach.
 - On the upgrade screen: an evaluation of the three cards on offer.
-- For normal numerical upgrades: a recommendation for the strongest option the coach can calculate.
-- For special or legendary effects: **NUMBERS PICK** instead of pretending the recommendation is certain. Effects that are not fully modeled are marked **situational**.
+- **BUILD OUTLOOK** compares possible paths through the next five normal module upgrades, including later combinations of flat damage and multipliers.
+- **NOW → AFTER UPGRADES** separates the immediate damage gain from the modeled later build. Both are relative to your current build.
+- **F9** shows the detailed immediate comparison and unresolved factors. Special cards or unsupported effects may remain unestimated.
+- Turn the coach off with **F7** or its button for a standalone damage meter. The setting is saved. The details panel scrolls independently of the meter.
+
+## Planning ahead
+
+The planner tries each supported card on a copy of your build. It samples future offers from your current module upgrade pool, follows unlocked upgrade chains, and compares damage throughout each path. It chooses the highest average modeled path score; the percentage underneath shows how often that card led the simulated comparisons. It is **not your chance of winning the run**.
+
+The default horizon is **five future upgrade decisions**, with up to 64 simulated paths per current card. In the mod's configuration file, `[Planning] FutureUpgrades` accepts 1–8. Longer searches add uncertainty as well as work. Search work is spread across frames; the result updates as balanced batches finish.
+
+These are possible offers, not a preview of the game's actual next cards. The planner uses its own random generator and never rerolls your cards or changes the game's RNG. Future choices use sampled lookahead without seeing the later outcome stream.
+
+Normal module upgrades are modeled. Future new modules, artifacts, special/legendary effects, survival and changes in playstyle are outside this search. Unsupported draws are marked as excluded; they are not replaced with more favorable cards. Treat the planned pick as a damage estimate, especially when the current offer contains an unestimated card.
 
 ## Disabling or removing the mod
 
@@ -68,9 +80,15 @@ BepInEx\plugins\WanderburgDamageStats.dll
 
 ## How the recommendation works
 
-Damage Stats polls Wanderburg’s existing `StatisticsQuery.CurrentRun` counters. It does not patch gameplay or statistics methods, and it does not change combat values or save data.
+Damage Stats reads existing damage counters and observes module activation events. It does not change combat values or save data.
 
-For normal upgrades, it calculates the relative numerical change. Damage and cooldown changes count directly. Charges, duration, size, and speed use conservative weights. The coach then combines the card’s effect with the affected weapon’s actual share of your damage. A result such as `≈ +12% build output` is an informed estimate for the current run, not a guarantee for every situation.
+Version 0.6.0 compares both attack channels using the actual card asset, internal rarity and selected core/additional attributes. Ram uses its native collision formula, sampled movement speeds and observed Fury state. Other adapters estimate projectile volleys, timed damage ticks and summoned units. Side Barracks' passive army uses damage × standing population / attack interval; its cooldown replenishes missing units rather than multiplying the army's DPS. Cooldown calculations for repeated attacks preserve measured idle time; readable projectile procs use chance × damage × projectile count.
+
+The game often reports only total damage per weapon. When both attacks are supported, the mod estimates their shares from attack output and observed triggers; a weapon with one modeled damage attack uses its module total. This inferred split is labeled and may differ from actual hit rates.
+
+The overlay distinguishes a damage pick from a **tentative** damage pick. Sensitivity scenarios show how timing and damage-share assumptions change the result; they are not guaranteed bounds. Missing card data, unsupported attack models and newly unlocked damage sources remain unestimated instead of receiving a fake zero score.
+
+Area coverage, burn refresh, crowd control, impact speed and some prefab overrides still need individual models. Planning compounds the supported damage model; it cannot resolve those missing factors. There is no claim of a guaranteed best overall pick. See [model coverage](MODEL_COVERAGE.md) for the assumptions and remaining limits.
 
 ## Building from source
 
