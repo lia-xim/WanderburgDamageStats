@@ -33,10 +33,12 @@ public sealed class DamageOverlay : MonoBehaviour
             refreshAt=Time.unscaledTime+.25f;
             var gm=GM.gm;
             CatalogSnapshot.TryExport(gm);
-            bool inRun=gm && gm.vm && !gm.mainMenuOpen;
+            bool inRun=gm && gm.vm && gm.gameplayRoundStarted && !gm.PreRunLoadoutActive && !gm.mainMenuOpen && !gm.gameOver;
             if(!inRun)
             {
                 hud?.Hide();
+                RuntimeFuture.Reset();
+                if(gm && gm.PreRunLoadoutActive && lastGameTime>=0) { CombatTelemetry.Reset(); lastGameTime=-1; }
                 if(!gm || !gm.vm) Choices.Clear();
                 return;
             }
@@ -46,7 +48,7 @@ public sealed class DamageOverlay : MonoBehaviour
             RuntimeModel.Observe(gm);
             if(!Plugin.Enabled.Value) { hud?.Hide(); return; }
             var modules=gm.vm.allModules2;
-            if(modules==null) return;
+            if(modules==null) { hud?.Hide(); return; }
             var rows=new List<HudWeapon>();
             var inventory=new List<string>();
             var recentTotal=CombatTelemetry.RecentTotal();
@@ -62,7 +64,8 @@ public sealed class DamageOverlay : MonoBehaviour
                 var recent=CombatTelemetry.Recent(m.moduleID);
                 float dealt=recent.Active+recent.Auto+recent.Unknown;
                 float share=recentAll>0?dealt/recentAll:0f;
-                rows.Add(new(name,share,dealt/observedSeconds));
+                string channels=recent.Active+recent.Auto>0 ? $"Skill {Number(recent.Active/observedSeconds)} · Auto {Number(recent.Auto/observedSeconds)}"+(recent.Unknown>0?$" · Other {Number(recent.Unknown/observedSeconds)}":"") : "Channel split unavailable";
+                rows.Add(new(name,share,dealt/observedSeconds,channels));
                 inventory.Add($"{name}:{stats.Active:0.##}/{stats.Auto:0.##}");
             }
             string currentInventory=string.Join("|",inventory);
@@ -77,6 +80,7 @@ public sealed class DamageOverlay : MonoBehaviour
                 .OrderBy(c=>c.Option.transform.position.x).Take(3).ToArray();
             bool showingUpgrade=gm.upgradeMenuOpen || activeChoices.Length>0;
             var content=new System.Text.StringBuilder();
+            var hints=new List<CardHint>();
             if(Plugin.FutureEnabled.Value && showingUpgrade && activeChoices.Length>0)
             {
                 var ranked=new List<RankedChoice>();
@@ -113,6 +117,18 @@ public sealed class DamageOverlay : MonoBehaviour
                 RuntimeFuture.Ensure(activeChoices,observedSeconds);
                 var future=RuntimeFuture.Results.OrderByDescending(r=>r.Mean).ThenByDescending(r=>r.WinShare).ToArray();
                 bool futureReady=Plugin.FutureEnabled.Value && RuntimeFuture.Samples>=16 && future.Length>=2;
+                bool partial=ranked.Any(r=>!r.Assessment.CanRank) || (futureReady && future.Length<ranked.Count);
+                bool futureTie=futureReady && Math.Abs(future[0].Mean-future[1].Mean)<.005;
+                foreach(var item in ranked)
+                {
+                    var route=future.FirstOrDefault(f=>f.Id==item.Card.ToString());
+                    bool lead=futureReady ? !futureTie && route!=null && route.Id==future[0].Id : winner==item;
+                    string label=lead?(partial?"PARTIAL LEAD":"ESTIMATED PICK"):"DAMAGE ESTIMATE";
+                    string now=item.Assessment.CanRank?Signed(item.Assessment.Gain.Value)+" now":"Not estimated";
+                    string later=futureReady && route!=null?$" · {Signed((float)route.EndMean)} after {RuntimeFuture.Depth}":"";
+                    string caveat=partial?"Some cards not modeled":item.Assessment.Unknowns.Length>0?"Conditional estimate":"Modeled build DPS";
+                    hints.Add(new(item.Choice.Option,$"<b>{label}</b>\n{now}{later}\n<size=80%>{caveat} · F9 details</size>",lead));
+                }
                 if(Plugin.FutureEnabled.Value)
                 {
                     content.Append("<color=#F3C879><b>BUILD OUTLOOK</b></color>\n");
@@ -167,7 +183,7 @@ public sealed class DamageOverlay : MonoBehaviour
                 if(!details) content.Append("<size=80%>F9: model details</size>\n\n");
                 }
             }
-            hud.Render(rows.ToArray(),recentAll/observedSeconds,recentAll>0,showingUpgrade,content.ToString().Trim(),details);
+            hud.Render(rows.ToArray(),recentAll/observedSeconds,recentAll>0,showingUpgrade,content.ToString().Trim(),details,hints.ToArray());
         }
         catch(Exception ex)
         {

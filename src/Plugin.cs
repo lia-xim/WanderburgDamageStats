@@ -13,7 +13,7 @@ namespace WanderburgDamageHUD;
 [BepInPlugin("io.github.lia-xim.wanderburg-damage-stats", "Wanderburg Damage Stats", Plugin.ModVersion)]
 public sealed class Plugin : BasePlugin
 {
-    public const string ModVersion="0.6.0";
+    public const string ModVersion="0.7.0";
     internal static ManualLogSource Logger = null!;
     internal static ConfigEntry<bool> Enabled = null!;
     internal static ConfigEntry<float> Scale = null!;

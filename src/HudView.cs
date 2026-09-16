@@ -5,16 +5,17 @@ using Object=UnityEngine.Object;
 
 namespace WanderburgDamageHUD;
 
-internal sealed record HudWeapon(string Name,float Share,float Dps);
+internal sealed record HudWeapon(string Name,float Share,float Dps,string Channels);
 
 // Native, reusable UI. Only the coach buttons intercept clicks; the meter stays click-through.
 internal sealed class HudView
 {
     private static readonly Color Gold=new(.96f,.76f,.42f);
-    private static readonly Color Ink=new(.075f,.085f,.115f,.96f);
+    private static readonly Color Ink=new(.045f,.055f,.07f,.48f);
     private static readonly Color Muted=new(.62f,.66f,.72f);
     private static readonly Color[] Palette={Gold,new(.40f,.72f,.93f),new(.93f,.48f,.39f),new(.56f,.81f,.61f),new(.72f,.58f,.94f)};
     private readonly GameObject canvas;
+    private readonly CardHints cardHints;
     private readonly RectTransform root,stats,coach,coachBody,toggleRect;
     private readonly TMP_FontAsset font;
     private readonly TextMeshProUGUI heading,version,total,unit,period,weaponHeading,toggleLabel,coachText;
@@ -28,6 +29,7 @@ internal sealed class HudView
         canvas=new GameObject("WanderburgDamageStats.HUD");Object.DontDestroyOnLoad(canvas);
         var c=canvas.AddComponent<Canvas>();c.renderMode=RenderMode.ScreenSpaceOverlay;c.sortingOrder=30000;
         canvas.AddComponent<GraphicRaycaster>();
+        cardHints=new CardHints(canvas.transform,font);
         root=Rect("HUD",canvas.transform);
         stats=Plate("Damage meter",root);
         var accent=Box("Gold edge",stats,Gold);Place(accent,0,0,3,100); // resized in Render
@@ -60,23 +62,25 @@ internal sealed class HudView
 
     internal void Hide()=>canvas.SetActive(false);
 
-    internal void Render(HudWeapon[] weapons,float dps,bool hasDamage,bool upgrade,string coaching,bool details)
+    internal void Render(HudWeapon[] weapons,float dps,bool hasDamage,bool upgrade,string coaching,bool details,CardHint[] hints)
     {
         canvas.SetActive(true);
+        cardHints.Render(upgrade && Plugin.FutureEnabled.Value?hints:Array.Empty<CardHint>());
+        stats.gameObject.SetActive(!upgrade);
         float scale=Mathf.Clamp(Screen.height/1080f,.5f,3f)*Mathf.Clamp(Plugin.Scale.Value,.7f,1.8f);
-        float width=upgrade?Mathf.Min(232,Screen.width*.12f/scale):258;
+        float width=upgrade?Mathf.Min(232,Screen.width*.12f/scale):230;
         float x=Mathf.Clamp((upgrade?12:Plugin.Left.Value)*scale,0,Screen.width-width*scale);
         float y=Mathf.Clamp(Plugin.Top.Value*scale,12,Mathf.Max(12,Screen.height-300*scale));
         root.localScale=new Vector3(scale,scale,1);root.anchoredPosition=new(x,-y);
         float available=(Screen.height-y-16)/scale;
-        float meterHeight=160+weapons.Length*49;
+        float meterHeight=108+weapons.Length*(details?48:32);
         Place(stats,0,0,width,meterHeight);
         Place(stats.GetChild(1).Cast<RectTransform>(),0,0,3,meterHeight);
         Place(heading.rectTransform,15,14,width-72,19);Place(version.rectTransform,width-52,17,42,14);
         total.text=DamageOverlay.Number(dps);
-        Place(total.rectTransform,13,37,width-62,50);Place(unit.rectTransform,width-49,66,38,18);
+        total.fontSize=30;Place(total.rectTransform,13,34,width-62,38);Place(unit.rectTransform,width-49,49,38,18);
         period.text=hasDamage?"LAST 20 SECONDS  ·  F8 HIDE":"WAITING FOR COMBAT  ·  F8 HIDE";
-        Place(period.rectTransform,16,91,width-30,16);Place(weaponHeading.rectTransform,16,119,width-32,14);
+        Place(period.rectTransform,16,77,width-30,16);weaponHeading.gameObject.SetActive(false);
         while(rows.Count<weapons.Length)
         {
             var r=Rect("Weapon "+rows.Count,stats);
@@ -89,24 +93,24 @@ internal sealed class HudView
         for(int i=0;i<rows.Count;i++)
         {
             var r=rows[i];r.Root.gameObject.SetActive(i<weapons.Length);if(i>=weapons.Length) continue;
-            var w=weapons[i];Place(r.Root,16,140+i*49,width-32,42);
-            r.Name.text=w.Name;r.Dps.text=DamageOverlay.Number(w.Dps);r.Share.text=DamageOverlay.Percent(w.Share)+" of total";
+            var w=weapons[i];Place(r.Root,16,101+i*(details?48:32),width-32,details?44:30);
+            r.Name.text=w.Name;r.Dps.text=DamageOverlay.Number(w.Dps);r.Share.text=w.Channels;
             Place(r.Name.rectTransform,0,0,width-90,18);Place(r.Dps.rectTransform,width-84,0,52,18);
-            Place(r.Track,0,24,width-32,3);Place(r.Fill,0,0,(width-32)*Mathf.Clamp01(w.Share),3);
-            r.Fill.GetComponent<Image>().color=Palette[i%Palette.Length];Place(r.Share.rectTransform,0,31,width-32,13);
+            Place(r.Track,0,21,width-32,2);Place(r.Fill,0,0,(width-32)*Mathf.Clamp01(w.Share),2);
+            r.Fill.GetComponent<Image>().color=Palette[i%Palette.Length];r.Share.gameObject.SetActive(details);Place(r.Share.rectTransform,0,29,width-32,13);
         }
         // Control strip belongs to the meter, so recommendations can always be re-enabled.
-        float controlsY=142+weapons.Length*49;meterHeight=controlsY+38;
+        float controlsY=103+weapons.Length*(details?48:32);meterHeight=controlsY+38;
         stats.sizeDelta=new(width,meterHeight);
         Place(stats.GetChild(1).Cast<RectTransform>(),0,0,3,meterHeight);
         Place(toggleRect,14,controlsY,width-28,24);
         toggleLabel.text=Plugin.FutureEnabled.Value?"F7   UPGRADE COACH  ON   ›":"F7   UPGRADE COACH  OFF   ›";
         Place(toggleLabel.rectTransform,8,5,width-44,16);
-        bool showCoach=Plugin.FutureEnabled.Value && upgrade && coaching.Length>0;
+        bool showCoach=details && Plugin.FutureEnabled.Value && upgrade && coaching.Length>0;
         coach.gameObject.SetActive(showCoach);
         if(showCoach)
         {
-            float top=meterHeight+10,room=Math.Max(65,available-top);
+            float top=0,room=Math.Max(65,available-top);
             float contentWidth=width-28;
             if(coachText.text!=coaching) coachText.transform.parent.Cast<RectTransform>().anchoredPosition=Vector2.zero;
             coachText.text=coaching;coachText.fontSize=12;
@@ -125,7 +129,7 @@ internal sealed class HudView
 
     private RectTransform Plate(string name,Transform parent)
     {
-        var border=Box(name,parent,new(.34f,.30f,.24f,.96f));
+        var border=Box(name,parent,new(.20f,.21f,.24f,.35f));
         var inner=Box("Inner",border,Ink);inner.anchorMin=Vector2.zero;inner.anchorMax=Vector2.one;
         inner.offsetMin=new(1,1);inner.offsetMax=new(-1,-1);
         return border;

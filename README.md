@@ -42,12 +42,12 @@ A shorter copy guide is also included in the release ZIP as `INSTALLATION.txt`.
 
 ## What you will see in the game
 
-- A large total-DPS readout, followed by damage bars and DPS for each weapon. These stay above the optional upgrade coach.
-- On the upgrade screen: an evaluation of the three cards on offer.
-- **BUILD OUTLOOK** compares possible paths through the next five normal module upgrades, including later combinations of flat damage and multipliers.
-- **NOW → AFTER UPGRADES** separates the immediate damage gain from the modeled later build. Both are relative to your current build.
-- **F9** shows the detailed immediate comparison and unresolved factors. Special cards or unsupported effects may remain unestimated.
-- Turn the coach off with **F7** or its button for a standalone damage meter. The setting is saved. The details panel scrolls independently of the meter.
+- A compact, translucent damage meter during the run, hidden during starting loadout selection.
+- Total DPS and thin damage bars for each weapon stay at the center of the combat HUD.
+- On upgrade screens, the meter gives way to short damage estimates above or below the cards. Unsupported cards say **Not estimated**; a partial comparison is labeled **PARTIAL LEAD**.
+- **F7** toggles the optional coach; **F8** toggles the entire overlay.
+- **F9** opens the detailed upgrade comparison. During combat it shows measured skill/auto DPS where the game supplies separate counters; otherwise it says **Channel split unavailable**. A separate damage-over-time counter is not implemented yet.
+- The detailed planner compares possible paths through the next five normal upgrades. Immediate and future gains are relative to your current build, not guaranteed results.
 
 ## Planning ahead
 
@@ -82,9 +82,9 @@ BepInEx\plugins\WanderburgDamageStats.dll
 
 Damage Stats reads existing damage counters and observes module activation events. It does not change combat values or save data.
 
-Version 0.6.0 compares both attack channels using the actual card asset, internal rarity and selected core/additional attributes. Ram uses its native collision formula, sampled movement speeds and observed Fury state. Other adapters estimate projectile volleys, timed damage ticks and summoned units. Side Barracks' passive army uses damage × standing population / attack interval; its cooldown replenishes missing units rather than multiplying the army's DPS. Cooldown calculations for repeated attacks preserve measured idle time; readable projectile procs use chance × damage × projectile count.
+Version 0.7.0 compares both attack channels using the actual card asset, internal rarity and selected core/additional attributes. Ram uses its native collision formula, sampled movement speeds and observed Fury state. Other adapters estimate projectile volleys, timed damage ticks and summoned units. Side Barracks' passive army uses damage × standing population / attack interval; its cooldown replenishes missing units rather than multiplying the army's DPS. Cooldown calculations for repeated attacks preserve measured idle time; readable projectile procs use chance × damage × projectile count.
 
-The game often reports only total damage per weapon. When both attacks are supported, the mod estimates their shares from attack output and observed triggers; a weapon with one modeled damage attack uses its module total. This inferred split is labeled and may differ from actual hit rates.
+The game often reports only total damage per weapon. When both attacks are supported, the mod estimates their shares from attack output and observed triggers; a weapon with one modeled damage attack uses its module total. This inferred split is used only for predictions, is labeled in model details and may differ from actual hit rates. It is not presented as measured skill/auto DPS.
 
 The overlay distinguishes a damage pick from a **tentative** damage pick. Sensitivity scenarios show how timing and damage-share assumptions change the result; they are not guaranteed bounds. Missing card data, unsupported attack models and newly unlocked damage sources remain unestimated instead of receiving a fake zero score.
 

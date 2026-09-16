@@ -42,12 +42,12 @@ Eine noch kürzere Kopieranleitung liegt im Release-ZIP als `INSTALLATION.txt`.
 
 ## Was du im Spiel siehst
 
-- Große Gesamt-DPS, darunter Schadensbalken und DPS je Waffe. Diese Werte stehen immer über den optionalen Empfehlungen.
-- Im Upgrade-Menü: eine Bewertung der drei angebotenen Karten.
-- **BUILD OUTLOOK** vergleicht mögliche Wege durch die nächsten fünf normalen Modul-Upgrades, einschließlich späterer Kombinationen aus Flat Damage und Multiplikatoren.
-- **NOW → AFTER UPGRADES** zeigt den sofortigen Schadensgewinn und den geschätzten späteren Build. Beide Angaben beziehen sich auf deinen jetzigen Build.
-- **F9** öffnet die ausführliche Sofortbewertung und die noch unsicheren Faktoren. Manche Spezialkarten oder Effekte bleiben ohne Schätzung.
-- Mit **F7** oder dem Coach-Button wird die Mod zum reinen Damage-Meter. Die Einstellung bleibt gespeichert. Lange Details lassen sich separat scrollen.
+- Eine kompakte, transparente Schadensanzeige im Run. Während der Startauswahl bleibt sie verborgen.
+- Gesamt-DPS und schmale Schadensbalken je Waffe stehen im Mittelpunkt.
+- Im Upgrade-Menü weicht das Damage-Meter kurzen Schätzungen oberhalb oder unterhalb der Karten. Nicht unterstützte Karten zeigen **Not estimated**; unvollständige Vergleiche sind als **PARTIAL LEAD** markiert.
+- **F7** schaltet den optionalen Coach um, **F8** die gesamte Anzeige.
+- **F9** öffnet den ausführlichen Upgrade-Vergleich. Im Kampf zeigt es gemessene Fähigkeit-/Auto-DPS, soweit das Spiel getrennte Zähler liefert. Sonst steht dort **Channel split unavailable**. Ein eigener DoT-Zähler ist noch nicht umgesetzt.
+- Der ausführliche Planer vergleicht mögliche Wege durch die nächsten fünf normalen Upgrades. Sofortige und spätere Gewinne beziehen sich auf deinen aktuellen Build und sind keine garantierten Ergebnisse.
 
 ## Ein paar Entscheidungen vorausdenken
 
@@ -82,9 +82,9 @@ BepInEx\plugins\WanderburgDamageStats.dll
 
 Damage Stats liest vorhandene Schadenszähler und beobachtet Aktivierungsereignisse der Module. Kampfwerte und Save-Daten werden nicht verändert.
 
-Version 0.6.0 vergleicht beide Angriffskanäle anhand der tatsächlich gezogenen Kartenwerte einschließlich interner Seltenheit und ausgewählter Zusatzattribute. Der Ram nutzt seine native Kollisionsformel, gemessene Bewegungsgeschwindigkeiten und den beobachteten Fury-Zustand. Weitere Adapter schätzen Projektilsalven, Schadensticks und beschworene Einheiten. Die dauerhafte Truppe von Side Barracks wird mit Schaden × Einheitenzahl / Angriffstakt berechnet. Ihr Cooldown füllt fehlende Einheiten nach und wird nicht einfach als mehr Armee-DPS gerechnet. Bei wiederholten Angriffen berücksichtigt der Cooldown-Vergleich gemessene Wartezeiten; auslesbare Projektil-Folgeeffekte gehen mit Auslösewahrscheinlichkeit × Schaden × Projektilzahl ein.
+Version 0.7.0 vergleicht beide Angriffskanäle anhand der tatsächlich gezogenen Kartenwerte einschließlich interner Seltenheit und ausgewählter Zusatzattribute. Der Ram nutzt seine native Kollisionsformel, gemessene Bewegungsgeschwindigkeiten und den beobachteten Fury-Zustand. Weitere Adapter schätzen Projektilsalven, Schadensticks und beschworene Einheiten. Die dauerhafte Truppe von Side Barracks wird mit Schaden × Einheitenzahl / Angriffstakt berechnet. Ihr Cooldown füllt fehlende Einheiten nach und wird nicht einfach als mehr Armee-DPS gerechnet. Bei wiederholten Angriffen berücksichtigt der Cooldown-Vergleich gemessene Wartezeiten; auslesbare Projektil-Folgeeffekte gehen mit Auslösewahrscheinlichkeit × Schaden × Projektilzahl ein.
 
-Das Spiel meldet häufig nur den Gesamtschaden je Waffe. Wenn beide Angriffe unterstützt werden, schätzt die Mod ihre Anteile anhand des Angriffsschadens und beobachteter Aktivierungen. Bei nur einem modellierten Schadensangriff wird der Waffengesamtschaden verwendet. Diese Zuordnung ist gekennzeichnet und kann von den tatsächlichen Trefferanteilen abweichen.
+Das Spiel meldet häufig nur den Gesamtschaden je Waffe. Wenn beide Angriffe unterstützt werden, schätzt die Mod ihre Anteile anhand des Angriffsschadens und beobachteter Aktivierungen. Bei nur einem modellierten Schadensangriff wird der Waffengesamtschaden verwendet. Diese Zuordnung gilt nur für Vorhersagen, ist in den Modelldetails gekennzeichnet und kann von den tatsächlichen Trefferanteilen abweichen. Sie wird nicht als gemessene Fähigkeit-/Auto-DPS angezeigt.
 
 Die Anzeige unterscheidet zwischen Schadensempfehlung und **vorläufiger** Schadensempfehlung. Die Szenarien zeigen den Einfluss verschiedener Timing- und Schadensanteil-Annahmen, keine garantierten Grenzen. Fehlende Kartendaten, nicht unterstützte Angriffsmodelle und neue Schadensquellen werden nicht mit null Prozent gleichgesetzt.
 

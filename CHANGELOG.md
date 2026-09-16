@@ -1,5 +1,14 @@
 # Wanderburg Damage Stats – Changelog
 
+## 0.7.0 - 2026-09-16 (alpha release)
+
+- Hides the HUD before the run starts, during starting loadout selection and after game over.
+- Makes the combat damage meter smaller and more transparent, with thin weapon damage bars.
+- Moves short upgrade estimates to labels above or below the cards. F9 opens the detailed comparison; F7 toggles recommendations and F8 toggles the whole overlay.
+- F9 during combat shows measured skill/auto damage when separate counters exist. Aggregate-only counters remain labeled unavailable; separate DoT tracking is not implemented.
+- Labels incomplete comparisons as PARTIAL LEAD rather than claiming an overall winner.
+- Build and all 89 automated checks pass. Final in-game card-label placement remains unverified.
+
 ## 0.6.0 - 2026-09-10 (alpha release)
 
 - Rebuilds the HUD around a large total-DPS readout, individual weapon damage bars and a separate coach panel. Damage statistics stay first.
